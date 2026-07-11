@@ -37,6 +37,16 @@ type BookingModalProps = {
   onSave: () => void;
 };
 
+// Normalise a Viator reference: add "BR-" prefix if it is missing
+function normaliseReference(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.toUpperCase().startsWith("BR-")) return trimmed.toUpperCase();
+  // Pure numeric string → add BR- prefix
+  if (/^\d+$/.test(trimmed)) return `BR-${trimmed}`;
+  return trimmed;
+}
+
 export default function BookingModal({ isOpen, bookingId, onClose, onSave }: BookingModalProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,13 +64,18 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
   const [phone, setPhone] = useState("");
   const [language, setLanguage] = useState("English");
   const [currency, setCurrency] = useState("EUR");
-  const [amountDecimal, setAmountDecimal] = useState("0.00");
   const [status, setStatus] = useState<string>("Pending");
   const [notes, setNotes] = useState("");
   const [version, setVersion] = useState(1);
 
   // Travellers
   const [travellers, setTravellers] = useState<TravellerState[]>([]);
+
+  // Derived: auto-compute total amountCents from traveller grossCents
+  const totalCents = travellers.reduce(
+    (sum, t) => sum + decimalToCents(t.grossDecimal || "0"),
+    0,
+  );
 
   // 1. Load Products & Options List
   useEffect(() => {
@@ -97,7 +112,6 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
           setPhone(b.phone || "");
           setLanguage(b.language || "English");
           setCurrency(b.currency || "EUR");
-          setAmountDecimal(centsToDecimal(b.amountCents || 0));
           setStatus(b.status || "Pending");
           setNotes(b.notes || "");
           setVersion(b.version || 1);
@@ -134,7 +148,6 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
       setPhone("");
       setLanguage("English");
       setCurrency("EUR");
-      setAmountDecimal("0.00");
       setStatus("Pending");
       setNotes("");
       setVersion(1);
@@ -174,7 +187,7 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
         firstName: "",
         lastName: "",
         type: "Adult",
-        isLead: travellers.length === 0, // make first lead if none
+        isLead: false, // only first traveller is lead
         dateOfBirth: "",
         nationality: "",
         grossDecimal: "0.00",
@@ -184,39 +197,23 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
   };
 
   const removeTraveller = (idx: number) => {
-    const isRemovingLead = travellers[idx]?.isLead;
+    if (travellers.length === 1) return;
     const nextTravellers = travellers.filter((_, i) => i !== idx);
-
     // If we removed the lead, assign the new first traveller as lead
-    if (isRemovingLead && nextTravellers.length > 0) {
-      nextTravellers[0].isLead = true;
+    const stillHasLead = nextTravellers.some((t) => t.isLead);
+    if (!stillHasLead && nextTravellers.length > 0) {
+      nextTravellers[0] = { ...nextTravellers[0], isLead: true };
     }
     setTravellers(nextTravellers);
   };
 
   const updateTraveller = (idx: number, patch: Partial<TravellerState>) => {
-    setTravellers(
-      travellers.map((t, i) => {
-        if (i !== idx) return t;
-        const updated = { ...t, ...patch };
-
-        // Ensure only one Lead traveller exists
-        if (patch.isLead) {
-          // Unset all other leads in the next render cycle, handled below
-        }
-        return updated;
-      })
-    );
+    setTravellers(travellers.map((t, i) => (i !== idx ? t : { ...t, ...patch })));
   };
 
-  // Ensure exactly one Lead is selected when toggled
-  const handleLeadToggle = (idx: number) => {
-    setTravellers(
-      travellers.map((t, i) => ({
-        ...t,
-        isLead: i === idx,
-      }))
-    );
+  // Reference blur: normalise BR- prefix
+  const handleReferenceBlur = () => {
+    setReference(normaliseReference(reference));
   };
 
   // Form Submission
@@ -225,23 +222,27 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
     if (submitting) return;
 
     // Validation
-    if (!reference.trim()) return setError("Booking Reference is required");
+    const normRef = normaliseReference(reference);
+    if (!normRef) return setError("Booking Reference is required");
     if (!productId) return setError("Product is required");
     if (!serviceDate) return setError("Service Date is required");
     if (!startTime) return setError("Start Time is required");
     if (travellers.length === 0) return setError("At least one traveller is required");
 
-    const hasLead = travellers.some((t) => t.isLead);
-    if (!hasLead) return setError("At least one traveller must be marked as the Lead traveller");
-
-    const missingNames = travellers.some((t) => !t.firstName.trim() || !t.lastName.trim());
-    if (missingNames) return setError("All travellers must have a first name and a last name");
+    const missingFirstName = travellers.some((t) => !t.firstName.trim());
+    if (missingFirstName) return setError("First name is required for every traveller");
 
     setSubmitting(true);
     setError(null);
 
+    // Ensure first traveller is always marked lead before saving
+    const normalisedTravellers = travellers.map((t, i) => ({
+      ...t,
+      isLead: i === 0,
+    }));
+
     const payload = {
-      reference,
+      reference: normRef,
       source,
       productId: Number(productId),
       productOptionId: productOptionId ? Number(productOptionId) : null,
@@ -251,11 +252,11 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
       phone,
       language,
       currency,
-      amountCents: decimalToCents(amountDecimal),
+      amountCents: totalCents, // auto-computed from traveller grossCents
       status,
       notes,
       version,
-      travellers: travellers.map((t) => ({
+      travellers: normalisedTravellers.map((t, i) => ({
         id: t.id,
         firstName: t.firstName.trim(),
         lastName: t.lastName.trim(),
@@ -263,8 +264,9 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
         isLead: t.isLead,
         dateOfBirth: t.dateOfBirth || null,
         nationality: t.nationality || "",
-        grossCents: decimalToCents(t.grossDecimal || 0),
-        costCents: decimalToCents(t.costDecimal || 0),
+        grossCents: decimalToCents(t.grossDecimal || "0"),
+        costCents: decimalToCents(t.costDecimal || "0"),
+        sortOrder: i,
       })),
     };
 
@@ -329,6 +331,7 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
             <div className="modal-body">
               {error && <div className="form-error" style={{ marginBottom: 16 }}>{error}</div>}
 
+              {/* ── Booking Details ── */}
               <div className="modal-section-title">Booking Details</div>
               <div className="form-grid">
                 <div className="field">
@@ -336,7 +339,8 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
                   <input
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
-                    placeholder="e.g. BR-12345"
+                    onBlur={handleReferenceBlur}
+                    placeholder="e.g. BR-1416446675 or 1416446675"
                     required
                   />
                 </div>
@@ -420,53 +424,31 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
                   <select value={language} onChange={(e) => setLanguage(e.target.value)}>
                     <option value="English">English</option>
                     <option value="Spanish">Spanish</option>
+                    <option value="Portuguese">Portuguese</option>
                     <option value="Italian">Italian</option>
-                    <option value="French">French</option>
-                    <option value="German">German</option>
                   </select>
                 </div>
               </div>
 
               <div className="form-grid" style={{ marginTop: 14 }}>
                 <div className="field">
-                  <label>Total Value</label>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <select
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value)}
-                      style={{ width: 80, flexShrink: 0 }}
-                    >
-                      <option value="EUR">EUR (€)</option>
-                      <option value="USD">USD ($)</option>
-                      <option value="GBP">GBP (£)</option>
-                    </select>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={amountDecimal}
-                      onChange={(e) => setAmountDecimal(e.target.value)}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-                <div className="field">
                   <label>Status</label>
                   <select value={status} onChange={(e) => setStatus(e.target.value)}>
                     <option value="Pending">Pending</option>
                     <option value="Confirmed">Confirmed</option>
-                    <option value="Completed">Completed</option>
+                    <option value="Modified">Modified</option>
+                    <option value="No-show">No-show</option>
                     <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="field" style={{ marginTop: 14 }}>
-                <label>Meeting Point</label>
-                <input
-                  value={meetingPoint}
-                  onChange={(e) => setMeetingPoint(e.target.value)}
-                  placeholder="e.g. Colosseum Metro Exit"
-                />
+                <div className="field">
+                  <label>Meeting Point</label>
+                  <input
+                    value={meetingPoint}
+                    onChange={(e) => setMeetingPoint(e.target.value)}
+                    placeholder="e.g. Colosseum Metro Exit"
+                  />
+                </div>
               </div>
 
               <div className="field" style={{ marginTop: 14 }}>
@@ -479,106 +461,155 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
                 />
               </div>
 
-              <div className="modal-section-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              {/* ── Travellers ── */}
+              <div
+                className="modal-section-title"
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}
+              >
                 <span>Travellers</span>
                 <button type="button" className="outline-button" onClick={addTraveller} style={{ padding: "4px 10px" }}>
                   + Add Traveller
                 </button>
               </div>
 
-              {travellers.map((t, idx) => (
-                <div key={idx} className="traveller-row-form">
-                  <div className="form-grid" style={{ gridTemplateColumns: "1fr 1fr 130px auto auto", alignItems: "center" }}>
-                    <div className="field">
-                      <label>First Name *</label>
-                      <input
-                        value={t.firstName}
-                        onChange={(e) => updateTraveller(idx, { firstName: e.target.value })}
-                        placeholder="John"
-                        required
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Last Name *</label>
-                      <input
-                        value={t.lastName}
-                        onChange={(e) => updateTraveller(idx, { lastName: e.target.value })}
-                        placeholder="Doe"
-                        required
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Type</label>
-                      <select
-                        value={t.type}
-                        onChange={(e) => updateTraveller(idx, { type: e.target.value as any })}
-                      >
-                        <option value="Adult">Adult</option>
-                        <option value="Child">Child</option>
-                        <option value="Infant">Infant</option>
-                      </select>
-                    </div>
-                    <div className="field" style={{ justifySelf: "center", textAlign: "center" }}>
-                      <label style={{ display: "block", marginBottom: 6 }}>Lead?</label>
-                      <input
-                        type="checkbox"
-                        checked={t.isLead}
-                        onChange={() => handleLeadToggle(idx)}
-                        style={{ width: "auto", cursor: "pointer", margin: "0 auto" }}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() => removeTraveller(idx)}
-                      style={{ alignSelf: "end", color: "var(--muted)", padding: "8px 0" }}
-                      disabled={travellers.length === 1}
+              <div style={{ overflowY: "auto", maxHeight: 420 }}>
+                {travellers.map((t, idx) => (
+                  <div key={idx} className="traveller-row-form">
+                    {/* Row 1: name + type + remove */}
+                    <div
+                      className="form-grid"
+                      style={{ gridTemplateColumns: "1fr 1fr 130px auto", alignItems: "end", gap: 8 }}
                     >
-                      ✕
-                    </button>
-                  </div>
+                      <div className="field">
+                        <label>
+                          First Name *{" "}
+                          {idx === 0 && (
+                            <span style={{ fontWeight: 600, color: "var(--accent, #2563eb)", fontSize: "0.75rem" }}>
+                              (Lead)
+                            </span>
+                          )}
+                        </label>
+                        <input
+                          value={t.firstName}
+                          onChange={(e) => updateTraveller(idx, { firstName: e.target.value })}
+                          placeholder="John"
+                          required
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Last Name</label>
+                        <input
+                          value={t.lastName}
+                          onChange={(e) => updateTraveller(idx, { lastName: e.target.value })}
+                          placeholder="Doe"
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Type</label>
+                        <select
+                          value={t.type}
+                          onChange={(e) =>
+                            updateTraveller(idx, { type: e.target.value as "Adult" | "Child" | "Infant" })
+                          }
+                        >
+                          <option value="Adult">Adult</option>
+                          <option value="Child">Child</option>
+                          <option value="Infant">Infant</option>
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => removeTraveller(idx)}
+                        style={{ alignSelf: "end", color: "var(--muted)", padding: "8px 4px", fontSize: "1rem" }}
+                        disabled={travellers.length === 1}
+                        title="Remove traveller"
+                      >
+                        ✕
+                      </button>
+                    </div>
 
-                  <div className="form-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr", marginTop: 8 }}>
-                    <div className="field">
-                      <label>Date of Birth</label>
-                      <input
-                        type="date"
-                        value={t.dateOfBirth}
-                        onChange={(e) => updateTraveller(idx, { dateOfBirth: e.target.value })}
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Nationality</label>
-                      <input
-                        value={t.nationality}
-                        onChange={(e) => updateTraveller(idx, { nationality: e.target.value })}
-                        placeholder="e.g. US"
-                        maxLength={80}
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Gross Price (€)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={t.grossDecimal}
-                        onChange={(e) => updateTraveller(idx, { grossDecimal: e.target.value })}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Cost Price (€)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={t.costDecimal}
-                        onChange={(e) => updateTraveller(idx, { costDecimal: e.target.value })}
-                        placeholder="0.00"
-                      />
+                    {/* Row 2: DOB + nationality + gross + cost */}
+                    <div
+                      className="form-grid"
+                      style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr", marginTop: 8, gap: 8 }}
+                    >
+                      <div className="field">
+                        <label>
+                          Date of Birth
+                          {(t.type === "Child" || t.type === "Infant") && (
+                            <span style={{ color: "var(--muted)", fontSize: "0.7rem" }}> (req. EU free entry)</span>
+                          )}
+                        </label>
+                        <input
+                          type="date"
+                          value={t.dateOfBirth}
+                          onChange={(e) => updateTraveller(idx, { dateOfBirth: e.target.value })}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Nationality</label>
+                        <input
+                          value={t.nationality}
+                          onChange={(e) => updateTraveller(idx, { nationality: e.target.value })}
+                          placeholder="e.g. IT, EU, US"
+                          maxLength={80}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Gross Price (€)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={t.grossDecimal}
+                          onChange={(e) => updateTraveller(idx, { grossDecimal: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Cost Price (€)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={t.costDecimal}
+                          onChange={(e) => updateTraveller(idx, { costDecimal: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {/* ── Summary line ── */}
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "8px 12px",
+                  background: "var(--surface-2, #f8f9fa)",
+                  borderRadius: 6,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "0.875rem",
+                  color: "var(--fg-muted, #555)",
+                }}
+              >
+                <span>
+                  <strong>{travellers.length}</strong> pax
+                </span>
+                <span>
+                  Total:{" "}
+                  <strong>
+                    €{(totalCents / 100).toLocaleString("en-GB", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </strong>{" "}
+                  <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>(auto-computed)</span>
+                </span>
+              </div>
             </div>
 
             <div className="modal-footer">

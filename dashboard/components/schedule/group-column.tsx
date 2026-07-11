@@ -19,18 +19,25 @@ export function GroupColumn({
 }) {
   const count = group.travellers.length;
   const over = count > group.capacity;
-  const full = count === group.capacity;
+  const full = count === group.capacity && count > 0;
   const noGuide = group.guideId === null;
 
-  const { setNodeRef, isOver } = useDroppable({ id: `group-${group.id}`, data: { type: "group", groupId: group.id } });
+  // Use prefixed ID "grp-{id}" to match schedule-board findContainer logic
+  const { setNodeRef, isOver } = useDroppable({
+    id: `grp-${group.id}`,
+    data: { type: "group", groupId: group.id },
+  });
   const itemIds = useMemo(() => group.travellers.map((t) => `trv-${t.id}`), [group.travellers]);
+
+  // Capacity badge: red when over, amber when at capacity
+  const capBadgeClass = over ? "cap-badge cap-over" : full ? "cap-badge cap-full" : "cap-badge";
 
   return (
     <div className={`group-card${over ? " over" : ""}${full ? " full" : ""}${noGuide ? " no-guide" : ""}`}>
       <div className="group-head">
         <div className="group-title">
           <span className="truncate">{group.productName}</span>
-          <span className="grp-label">GRP {group.sortOrder / 10 + (group.sortOrder % 10 === 0 ? 0 : 0) || ""}</span>
+          {group.optionCode && <span className="grp-label">{group.optionCode}</span>}
         </div>
         <div className="group-times tnum">
           {group.departureTime || "—:—"} · ticket {group.ticketTime || "—:—"}
@@ -38,10 +45,11 @@ export function GroupColumn({
         <div className="group-guide">
           Guide: {group.guideName || "—"} {noGuide && <span title="No guide assigned">⚠</span>}
         </div>
-        <div className="group-cap tnum">
+        {/* Capacity badge: "{current} / {capacity}" */}
+        <div className={capBadgeClass}>
           {count} / {group.capacity}
           {over && <span className="over-flag">OVER ⚠</span>}
-          {full && <span className="full-flag">FULL</span>}
+          {full && !over && <span className="full-flag">FULL</span>}
         </div>
       </div>
 
