@@ -1,0 +1,322 @@
+{
+  "_comment": "ANONYMISED fixture derived from the client's July 2026 workbook, service date 12 Jul 2026. All traveller names and phone numbers are synthetic. Booking references are synthetic. Structure, party sizes, tour types, times, prices and the Group 1 / Group 2 split are REAL.",
+  "_why": "This day is the canonical test case: one 8-traveller booking is SPLIT across two groups, and one group holds travellers from three different bookings.",
+  "serviceDate": "2026-07-12",
+  "bookings": [
+    {
+      "ref": "BR-1414100001",
+      "tour": "Colosseo guide",
+      "bookedTime": "09:00",
+      "language": "English",
+      "phone": "+1 555 0101",
+      "travellers": [
+        {
+          "firstName": "Gus",
+          "lastName": "Aldridge",
+          "type": "Adult",
+          "isLead": true,
+          "grossCents": 6052,
+          "assignedGroup": 2,
+          "_ticketNote": "Group 2 Ticket done 9:45"
+        },
+        {
+          "firstName": "Lena",
+          "lastName": "Jansen",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 6052,
+          "assignedGroup": 2,
+          "_ticketNote": "Group 2 Ticket done 9:45"
+        },
+        {
+          "firstName": "Hana",
+          "lastName": "Jansen",
+          "type": "Child",
+          "isLead": false,
+          "grossCents": 3587,
+          "assignedGroup": 2,
+          "_ticketNote": "Group 2 Ticket done 9:45"
+        }
+      ]
+    },
+    {
+      "ref": "BR-1414100002",
+      "tour": "Colosseo guide",
+      "bookedTime": "10:00",
+      "language": "English",
+      "phone": "+1 555 0102",
+      "travellers": [
+        {
+          "firstName": "Mo",
+          "lastName": "Hensley",
+          "type": "Adult",
+          "isLead": true,
+          "grossCents": 5037,
+          "assignedGroup": 2,
+          "_ticketNote": "Group 2 Ticket done 9:45"
+        },
+        {
+          "firstName": "Pia",
+          "lastName": "Deering",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5037,
+          "assignedGroup": 2,
+          "_ticketNote": "Group 2 Ticket done 9:45"
+        }
+      ]
+    },
+    {
+      "ref": "BR-1414100003",
+      "tour": "Colosseo guide",
+      "bookedTime": "09:00",
+      "language": "English",
+      "phone": "+1 555 0103",
+      "travellers": [
+        {
+          "firstName": "Kit",
+          "lastName": "Fairbank",
+          "type": "Adult",
+          "isLead": true,
+          "grossCents": 5832,
+          "assignedGroup": 1,
+          "_ticketNote": "Group 1 Ticket done 9:30"
+        },
+        {
+          "firstName": "Gus",
+          "lastName": "Fairbank",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5832,
+          "assignedGroup": 1,
+          "_ticketNote": "Group 1 Ticket done 9:30"
+        },
+        {
+          "firstName": "Otto",
+          "lastName": "Fairbank",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5832,
+          "assignedGroup": 1,
+          "_ticketNote": "Group 1 Ticket done 9:30"
+        },
+        {
+          "firstName": "Bea",
+          "lastName": "Fairbank",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5832,
+          "assignedGroup": 1,
+          "_ticketNote": "Group 1 Ticket done 9:30"
+        },
+        {
+          "firstName": "Dana",
+          "lastName": "Fairbank",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5832,
+          "assignedGroup": 1,
+          "_ticketNote": "Group 1 Ticket done 9:30"
+        },
+        {
+          "firstName": "Alex",
+          "lastName": "Fairbank",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5832,
+          "assignedGroup": 1,
+          "_ticketNote": "Group 1 Ticket done 9:30"
+        },
+        {
+          "firstName": "Sam",
+          "lastName": "Bramley",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5832,
+          "assignedGroup": 2,
+          "_ticketNote": "Group 2 Ticket done 9:45"
+        },
+        {
+          "firstName": "Lena",
+          "lastName": "Bramley",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5832,
+          "assignedGroup": 2,
+          "_ticketNote": "Group 2 Ticket done 9:45"
+        }
+      ]
+    },
+    {
+      "ref": "BR-1414100004",
+      "tour": "Semi-Private Colosseo",
+      "bookedTime": "09:00",
+      "language": "English",
+      "phone": "+1 555 0104",
+      "travellers": [
+        {
+          "firstName": "Ivo",
+          "lastName": "Castellan",
+          "type": "Adult",
+          "isLead": true,
+          "grossCents": 9122,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:00"
+        },
+        {
+          "firstName": "Sam",
+          "lastName": "Castellan",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 9122,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:00"
+        },
+        {
+          "firstName": "Cai",
+          "lastName": "Castellan",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 9122,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:00"
+        },
+        {
+          "firstName": "Emil",
+          "lastName": "Castellan",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 9122,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:00"
+        },
+        {
+          "firstName": "Otto",
+          "lastName": "Castellan",
+          "type": "Child",
+          "isLead": false,
+          "grossCents": 6408,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:00"
+        },
+        {
+          "firstName": "Nia",
+          "lastName": "Castellan",
+          "type": "Child",
+          "isLead": false,
+          "grossCents": 6408,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:00"
+        }
+      ]
+    },
+    {
+      "ref": "BR-1414100005",
+      "tour": "Colosseo guide",
+      "bookedTime": "10:00",
+      "language": "Portuguese",
+      "phone": "+1 555 0105",
+      "travellers": [
+        {
+          "firstName": "Quin",
+          "lastName": "Ibarra",
+          "type": "Adult",
+          "isLead": true,
+          "grossCents": 5767,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 10:15"
+        },
+        {
+          "firstName": "Dana",
+          "lastName": "Jansen",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5767,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 10:15"
+        },
+        {
+          "firstName": "Emil",
+          "lastName": "Eastwood",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 5767,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 10:15"
+        },
+        {
+          "firstName": "Alex",
+          "lastName": "Hensley",
+          "type": "Child",
+          "isLead": false,
+          "grossCents": 3577,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 10:15"
+        },
+        {
+          "firstName": "Alex",
+          "lastName": "Aldridge",
+          "type": "Child",
+          "isLead": false,
+          "grossCents": 3577,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 10:15"
+        }
+      ]
+    },
+    {
+      "ref": "BR-1414100006",
+      "tour": "Private Colosseo",
+      "bookedTime": "09:00",
+      "language": "English",
+      "phone": "+1 555 0106",
+      "travellers": [
+        {
+          "firstName": "Dana",
+          "lastName": "Castellan",
+          "type": "Adult",
+          "isLead": true,
+          "grossCents": 12650,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:15"
+        },
+        {
+          "firstName": "Fern",
+          "lastName": "Castellan",
+          "type": "Adult",
+          "isLead": false,
+          "grossCents": 12650,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:15"
+        },
+        {
+          "firstName": "Alex",
+          "lastName": "Castellan",
+          "type": "Child",
+          "isLead": false,
+          "grossCents": 7000,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:15"
+        },
+        {
+          "firstName": "Ivo",
+          "lastName": "Castellan",
+          "type": "Child",
+          "isLead": false,
+          "grossCents": 7000,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:15"
+        },
+        {
+          "firstName": "Bea",
+          "lastName": "Castellan",
+          "type": "Child",
+          "isLead": false,
+          "grossCents": 7000,
+          "assignedGroup": null,
+          "_ticketNote": "Ticket done 9:15"
+        }
+      ]
+    }
+  ]
+}

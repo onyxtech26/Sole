@@ -1,0 +1,10 @@
+onlyBuiltDependencies:
+  - esbuild
+ignoredBuiltDependencies:
+  - core-js
+  - sharp
+  - unrs-resolver
+allowBuilds:
+  core-js: set this to true or false
+  esbuild: set this to true or false
+  sharp: set this to true or false
