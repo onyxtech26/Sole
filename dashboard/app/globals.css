@@ -137,8 +137,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--ink); outli
 /* ── Schedule board ────────────────────────────────────── */
 .board-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; gap: 16px; }
 .date-nav { display: flex; align-items: center; gap: 10px; }
-.date-nav button { border: 1px solid var(--line-strong); background: #fff; width: 30px; height: 30px; border-radius: 6px; font-size: 14px; }
-.date-nav button:hover { background: var(--fill); }
+.date-nav button:not(.text-button) { border: 1px solid var(--line-strong); background: #fff; width: 30px; height: 30px; border-radius: 6px; font-size: 14px; }
+.date-nav button:not(.text-button):hover { background: var(--fill); }
 .date-nav .date-label { font-size: 15px; font-weight: 700; min-width: 160px; text-align: center; }
 
 .board { display: flex; gap: 14px; align-items: flex-start; }
