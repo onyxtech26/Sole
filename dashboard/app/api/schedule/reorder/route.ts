@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       groupOrder?: number[];
     };
 
-    await db.transaction(async (tx) => {
+    await db.transaction(async (tx: any) => {
       for (const c of body.containers) {
         for (let i = 0; i < c.travellerIds.length; i++) {
           await tx

@@ -52,7 +52,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "reference, productId, serviceDate required" }, { status: 400 });
     }
 
-    const ok = await db.transaction(async (tx) => {
+    const ok = await db.transaction(async (tx: any) => {
       // 1. Optimistic locking check + update
       const updated = await tx
         .update(bookings)
@@ -87,7 +87,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         .select({ id: travellers.id })
         .from(travellers)
         .where(eq(travellers.bookingId, id));
-      const existingIds = existingTravellers.map((t) => t.id);
+      const existingIds = (existingTravellers as { id: number }[]).map((t) => t.id);
 
       const incomingTravellers = body.travellers || [];
       const incomingIds = incomingTravellers

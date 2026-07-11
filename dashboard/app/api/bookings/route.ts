@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "reference, productId, serviceDate required" }, { status: 400 });
     }
 
-    const id = await db.transaction(async (tx) => {
+    const id = await db.transaction(async (tx: any) => {
       const [b] = await tx
         .insert(bookings)
         .values({

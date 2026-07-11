@@ -9,8 +9,8 @@ export async function GET() {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const prods = await db.select().from(products).orderBy(asc(products.sortOrder));
-    const opts = await db.select().from(productOptions).orderBy(asc(productOptions.sortOrder));
+    const prods = (await db.select().from(products).orderBy(asc(products.sortOrder))) as any[];
+    const opts = (await db.select().from(productOptions).orderBy(asc(productOptions.sortOrder))) as any[];
     const withOptions = prods.map((p) => ({
       ...p,
       options: opts.filter((o) => o.productId === p.id),

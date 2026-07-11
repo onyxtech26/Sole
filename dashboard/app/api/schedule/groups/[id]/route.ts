@@ -29,7 +29,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const id = Number((await params).id);
     // Return travellers to Unassigned, then delete the group (never delete a person)
-    await db.transaction(async (tx) => {
+    await db.transaction(async (tx: any) => {
       await tx.update(travellers).set({ groupId: null }).where(eq(travellers.groupId, id));
       await tx.delete(tourGroups).where(eq(tourGroups.id, id));
     });

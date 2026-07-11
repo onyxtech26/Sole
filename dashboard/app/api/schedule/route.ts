@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       .leftJoin(productOptions, eq(tourGroups.productOptionId, productOptions.id))
       .leftJoin(guides, eq(tourGroups.guideId, guides.id))
       .where(eq(tourGroups.serviceDate, date))
-      .orderBy(asc(tourGroups.sortOrder));
+      .orderBy(asc(tourGroups.sortOrder)) as any[];
 
     // Query B — all travellers for the date, assigned or not
     const travRows = await db
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       .from(travellers)
       .innerJoin(bookings, eq(travellers.bookingId, bookings.id))
       .where(and(eq(bookings.serviceDate, date), isNull(bookings.archivedAt)))
-      .orderBy(asc(travellers.sortOrder));
+      .orderBy(asc(travellers.sortOrder)) as any[];
 
     // party sizes + per-group counts
     const partySize = new Map<number, number>();

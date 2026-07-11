@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
         .leftJoin(productOptions, eq(tourGroups.productOptionId, productOptions.id))
         .leftJoin(guides, eq(tourGroups.guideId, guides.id))
         .where(eq(tourGroups.serviceDate, date))
-        .orderBy(asc(tourGroups.sortOrder))
+        .orderBy(asc(tourGroups.sortOrder)) as any[]
     ).map((r) => ({ ...r, capacity: Number(r.capacity) }));
 
     // ── Query B — all travellers for the day ──────────────────────────────────

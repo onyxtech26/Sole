@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, message: "No unassigned travellers to group." });
     }
 
-    const unassigned: TravellerForAutoGroup[] = unassignedRows.map((t) => ({
+    const unassigned: TravellerForAutoGroup[] = (unassignedRows as any[]).map((t) => ({
       id: t.id,
       bookingId: t.bookingId,
       productId: t.productId,
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     let existingGroups: GroupForAutoGroup[] = [];
     if (groupRows.length > 0) {
-      const groupIds = groupRows.map((g) => g.id);
+      const groupIds = (groupRows as any[]).map((g) => g.id);
       const travRows = await db
         .select({
           id: travellers.id,
@@ -83,13 +83,13 @@ export async function POST(request: NextRequest) {
           )
         );
 
-      existingGroups = groupRows.map((g) => ({
+      existingGroups = (groupRows as any[]).map((g) => ({
         id: g.id,
         productId: g.productId,
         productOptionId: g.productOptionId,
         language: "", // derived from travellers in autoGroup
         capacity: Number(g.capacity),
-        travellers: travRows
+        travellers: (travRows as any[])
           .filter((t) => t.groupId === g.id)
           .map((t) => ({
             id: t.id,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     const result = autoGroup(unassigned, existingGroups, optionsList);
 
     // 5. Persist results in a transaction
-    await db.transaction(async (tx) => {
+    await db.transaction(async (tx: any) => {
       // Find the maximum sortOrder among existing groups to append new groups
       const [maxGroup] = await tx
         .select({ val: sql<number>`MAX(${tourGroups.sortOrder})` })
