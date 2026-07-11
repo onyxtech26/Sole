@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { formatMoney } from "@/lib/types";
+import BookingModal from "@/components/bookings/booking-modal";
 
 type Row = {
   id: number; reference: string; serviceDate: string; startTime: string; productName: string;
@@ -13,8 +14,10 @@ export default function ReservationsPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("today");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
 
-  useEffect(() => {
+  const fetchReservations = useCallback(() => {
     setLoading(true);
     fetch(`/api/bookings?tab=${tab}`)
       .then((r) => r.json())
@@ -22,12 +25,31 @@ export default function ReservationsPage() {
       .finally(() => setLoading(false));
   }, [tab]);
 
+  useEffect(() => {
+    fetchReservations();
+  }, [fetchReservations]);
+
+  const openModal = (id: number | null) => {
+    setSelectedBookingId(id);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveSuccess = () => {
+    setIsModalOpen(false);
+    fetchReservations();
+  };
+
   return (
     <>
       <header className="topbar">
         <div>
           <p className="eyebrow">RESERVATIONS</p>
           <h1>Reservations</h1>
+        </div>
+        <div className="top-actions">
+          <button className="primary-button" onClick={() => openModal(null)}>
+            + New Booking
+          </button>
         </div>
       </header>
 
@@ -50,7 +72,7 @@ export default function ReservationsPage() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} onClick={() => openModal(r.id)} style={{ cursor: "pointer" }}>
                   <td className="tnum">{r.serviceDate}</td>
                   <td className="tnum">{(r.startTime || "").slice(0, 5)}</td>
                   <td>{r.productName}</td>
@@ -68,6 +90,13 @@ export default function ReservationsPage() {
           {!loading && rows.length === 0 && <div className="empty-state">No reservations.</div>}
         </div>
       </div>
+
+      <BookingModal
+        isOpen={isModalOpen}
+        bookingId={selectedBookingId}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveSuccess}
+      />
     </>
   );
 }

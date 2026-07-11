@@ -21,6 +21,7 @@ export default function SchedulePage() {
   const [date, setDate] = useState("2026-07-12");
   const [board, setBoard] = useState<BoardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [autoGrouping, setAutoGrouping] = useState(false);
 
   const load = useCallback(async (d: string) => {
     setLoading(true);
@@ -29,6 +30,25 @@ export default function SchedulePage() {
     setBoard(data);
     setLoading(false);
   }, []);
+
+  const handleAutoGroup = async () => {
+    setAutoGrouping(true);
+    try {
+      const res = await fetch(`/api/schedule/auto-group?date=${date}`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        await load(date);
+      } else {
+        alert("Failed to auto-group");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error auto-grouping travellers");
+    } finally {
+      setAutoGrouping(false);
+    }
+  };
 
   useEffect(() => { load(date); }, [date, load]);
 
@@ -40,6 +60,9 @@ export default function SchedulePage() {
           <h1>Schedule</h1>
         </div>
         <div className="top-actions">
+          <button className="primary-button" onClick={handleAutoGroup} disabled={autoGrouping || loading} style={{ marginRight: 8 }}>
+            {autoGrouping ? "Grouping…" : "Auto-group"}
+          </button>
           <a className="outline-button" href={`/api/reports/pdf?date=${date}`}>Print manifest</a>
         </div>
       </header>

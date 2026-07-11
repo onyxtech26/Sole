@@ -193,3 +193,69 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--ink); outli
 
 /* ── Print ─────────────────────────────────────────────── */
 @media print { .app-shell { display: none; } }
+
+/* ── Modal / Overlay ────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: grid;
+  place-items: center;
+  z-index: 500;
+  padding: 20px;
+}
+.modal-content {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 850px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h2 {
+  font-size: 18px;
+  letter-spacing: -.02em;
+}
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: var(--canvas);
+}
+.modal-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 18px 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.modal-section-title:first-of-type {
+  margin-top: 0;
+}
+.traveller-row-form {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--canvas);
+  margin-bottom: 10px;
+}
