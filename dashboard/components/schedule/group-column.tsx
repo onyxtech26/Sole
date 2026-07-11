@@ -29,8 +29,8 @@ export function GroupColumn({
   });
   const itemIds = useMemo(() => group.travellers.map((t) => `trv-${t.id}`), [group.travellers]);
 
-  // Capacity badge: red when over, amber when at capacity
-  const capBadgeClass = over ? "cap-badge cap-over" : full ? "cap-badge cap-full" : "cap-badge";
+  // Capacity badge: clean monochrome classes
+  const capBadgeClass = over ? "group-cap over" : full ? "group-cap full" : "group-cap";
 
   return (
     <div className={`group-card${over ? " over" : ""}${full ? " full" : ""}${noGuide ? " no-guide" : ""}`}>

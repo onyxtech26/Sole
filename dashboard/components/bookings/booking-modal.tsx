@@ -484,7 +484,7 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
                         <label>
                           First Name *{" "}
                           {idx === 0 && (
-                            <span style={{ fontWeight: 600, color: "var(--accent, #2563eb)", fontSize: "0.75rem" }}>
+                            <span className="text-lead-indicator" style={{ marginLeft: 6 }}>
                               (Lead)
                             </span>
                           )}
@@ -588,12 +588,12 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
                 style={{
                   marginTop: 12,
                   padding: "8px 12px",
-                  background: "var(--surface-2, #f8f9fa)",
+                  background: "var(--fill)",
                   borderRadius: 6,
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: "0.875rem",
-                  color: "var(--fg-muted, #555)",
+                  color: "var(--muted)",
                 }}
               >
                 <span>
@@ -607,7 +607,7 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
                       maximumFractionDigits: 2,
                     })}
                   </strong>{" "}
-                  <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>(auto-computed)</span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--faint)" }}>(auto-computed)</span>
                 </span>
               </div>
             </div>
@@ -616,10 +616,10 @@ export default function BookingModal({ isOpen, bookingId, onClose, onSave }: Boo
               {bookingId && (
                 <button
                   type="button"
-                  className="outline-button"
+                  className="button-danger"
                   onClick={handleArchive}
                   disabled={submitting}
-                  style={{ marginRight: "auto", borderColor: "#dc2626", color: "#dc2626" }}
+                  style={{ marginRight: "auto" }}
                 >
                   Archive Booking
                 </button>
