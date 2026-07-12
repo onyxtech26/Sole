@@ -1,0 +1,228 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-serif: "Playfair Display", Georgia, serif;
+  
+  --color-theme-bg: var(--bg-primary);
+  --color-theme-panel: var(--bg-panel);
+  --color-theme-text: var(--text-primary);
+  --color-theme-muted: var(--text-secondary);
+  --color-theme-accent: var(--color-accent);
+  --color-theme-accent-glow: var(--color-accent-glow);
+  --color-theme-accent-border: var(--color-accent-border);
+  --color-theme-border: var(--border-primary);
+  --color-theme-gradient-start: var(--gradient-start);
+  --color-theme-gradient-end: var(--gradient-end);
+}
+
+/* Base style resets */
+html, body {
+  background-color: var(--bg-primary, #020617);
+  color: var(--text-primary, #f8fafc);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  min-height: 100vh;
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+/* Default Theme: Premium White Glassmorphism (SOLE Custom) */
+:root, html {
+  --bg-primary: #ffffff;
+  --bg-panel: rgba(255, 255, 255, 0.7);
+  --color-accent: #4f46e5; /* Premium Indigo */
+  --color-accent-glow: rgba(79, 70, 229, 0.05);
+  --color-accent-border: rgba(79, 70, 229, 0.15);
+  --text-primary: #0f172a; /* Slate 900 */
+  --text-secondary: #475569; /* Slate 600 */
+  --border-primary: rgba(15, 23, 42, 0.06);
+  --gradient-start: #4f46e5; /* Indigo 600 */
+  --gradient-end: #10b981; /* Emerald 500 */
+}
+
+/* Custom Themes - Scoped by CSS classes on html element */
+
+/* Obsidian Gold */
+html.theme-obsidian {
+  --bg-primary: #030712;
+  --bg-panel: rgba(17, 24, 39, 0.65);
+  --color-accent: #f59e0b;
+  --color-accent-glow: rgba(245, 158, 11, 0.12);
+  --color-accent-border: rgba(245, 158, 11, 0.25);
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --gradient-start: #d97706;
+  --gradient-end: #fbbf24;
+}
+
+/* Alpine Emerald */
+html.theme-alpine {
+  --bg-primary: #022c22; /* Forest shade */
+  --bg-panel: rgba(6, 78, 59, 0.6);
+  --color-accent: #10b981; /* Emerald Green */
+  --color-accent-glow: rgba(16, 185, 129, 0.15);
+  --color-accent-border: rgba(16, 185, 129, 0.3);
+  --text-primary: #f0fdf4;
+  --text-secondary: #a7f3d0;
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --gradient-start: #059669;
+  --gradient-end: #34d399;
+}
+
+/* Amalfi Azure */
+html.theme-amalfi {
+  --bg-primary: #075985; /* Ocean Navy */
+  --bg-panel: rgba(12, 74, 110, 0.65);
+  --color-accent: #38bdf8; /* Mediterranean Sky Blue */
+  --color-accent-glow: rgba(56, 189, 248, 0.15);
+  --color-accent-border: rgba(56, 189, 248, 0.3);
+  --text-primary: #f0f9ff;
+  --text-secondary: #bae6fd;
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --gradient-start: #0284c7;
+  --gradient-end: #38bdf8;
+}
+
+/* Royal Amethyst */
+html.theme-royal {
+  --bg-primary: #1e1b4b; /* Royal violet */
+  --bg-panel: rgba(30, 27, 75, 0.65);
+  --color-accent: #c084fc; /* Lavender bloom */
+  --color-accent-glow: rgba(192, 132, 252, 0.15);
+  --color-accent-border: rgba(192, 132, 252, 0.3);
+  --text-primary: #faf5ff;
+  --text-secondary: #e9d5ff;
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --gradient-start: #8b5cf6;
+  --gradient-end: #c084fc;
+}
+
+/* Sunset Terracotta */
+html.theme-terracotta {
+  --bg-primary: #3c1e15; /* Tuscany clay sienna shadow */
+  --bg-panel: rgba(67, 30, 22, 0.65);
+  --color-accent: #f97316; /* Copper gold */
+  --color-accent-glow: rgba(249, 115, 22, 0.15);
+  --color-accent-border: rgba(249, 115, 22, 0.3);
+  --text-primary: #fff7ed;
+  --text-secondary: #ffedd5;
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --gradient-start: #ea580c;
+  --gradient-end: #fb923c;
+}
+
+/* Classic Alabaster (Light Theme) */
+html.theme-alabaster, [data-theme="light"] {
+  --bg-primary: #ffffff; /* pure white background */
+  --bg-panel: rgba(255, 255, 255, 0.7);
+  --color-accent: #4f46e5; /* Premium Indigo */
+  --color-accent-glow: rgba(79, 70, 229, 0.05);
+  --color-accent-border: rgba(79, 70, 229, 0.15);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-primary: rgba(15, 23, 42, 0.06);
+  --gradient-start: #4f46e5; /* Indigo 600 */
+  --gradient-end: #10b981; /* Emerald 500 */
+}
+
+/* Font styles custom overrides classes */
+.font-style-sans {
+  font-family: var(--font-sans) !important;
+}
+.font-style-serif {
+  font-family: var(--font-serif) !important;
+}
+.font-style-mono {
+  font-family: var(--font-mono) !important;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Media Print Overrides for manifest downloads */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  aside {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    height: auto !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+}
+
+/* Custom Fade Animation Classes */
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Premium Glassmorphic style presets */
+.glass-panel {
+  background: var(--bg-panel);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid var(--border-primary);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* Floating liquid design background circles animation classes */
+.animate-blob-float-1 {
+  animation: blob-float-1 25s ease-in-out infinite;
+}
+.animate-blob-float-2 {
+  animation: blob-float-2 28s ease-in-out infinite;
+}
+.animate-blob-float-3 {
+  animation: blob-float-3 22s ease-in-out infinite;
+}
+
+@keyframes blob-float-1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(60px, -50px) scale(1.15); }
+  66% { transform: translate(-40px, 40px) scale(0.85); }
+}
+@keyframes blob-float-2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-50px, 60px) scale(1.1); }
+}
+@keyframes blob-float-3 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  40% { transform: translate(50px, -40px) scale(0.95); }
+}

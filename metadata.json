@@ -1,0 +1,6 @@
+{
+  "name": "Tourism Reservation Management Dashboard",
+  "description": "Centralized reservation dashboard for managing tour bookings, Viator paste-and-fill parsing, and operational daily reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
