@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
-import { Compass, LayoutDashboard, CalendarDays, PlusCircle, FileSpreadsheet, Sun, Moon, LogOut, Users, Car, Sparkles, Coins, Trello, Layers } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, PlusCircle, FileSpreadsheet, Sun, Moon, LogOut, Users, Sparkles, Coins, Trello, Layers, Menu, X } from 'lucide-react';
 import { Booking, User } from './types';
 import { DEFAULT_SEED_DATA } from './utils/seed';
 import LoginScreen from './components/LoginScreen';
@@ -10,7 +10,6 @@ import BookingsView from './components/BookingsView';
 import ReportsView from './components/ReportsView';
 import GuidePortalView from './components/GuidePortalView';
 import CustomersView from './components/CustomersView';
-import VehiclesView from './components/VehiclesView';
 import GuidesView from './components/GuidesView';
 import FinanceView from './components/FinanceView';
 import ScheduleView from './components/ScheduleView';
@@ -22,6 +21,17 @@ const THEME_KEY = 'sole_theme';
 const ACTIVE_THEME_KEY = 'sole_active_theme_preset';
 const ACTIVE_FONT_KEY = 'sole_active_font';
 
+const isViewAllowed = (role: string, view: string) => {
+  if (role === 'manager') return true;
+  if (role === 'staff') {
+    return view !== 'guides' && view !== 'finance';
+  }
+  if (role === 'guide') {
+    return view === 'schedule' || view === 'reports' || view === 'customers';
+  }
+  return false;
+};
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -31,8 +41,12 @@ export default function App() {
   const [activeThemePreset, setActiveThemePreset] = useState<string>('alabaster');
   const [activeFont, setActiveFont] = useState<string>('sans');
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState<boolean>(false);
   const [isSplashing, setIsSplashing] = useState<boolean>(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
+
+  const openMobileNav = () => { setMobileNavOpen(true); setIsSidebarExpanded(true); };
+  const closeMobileNav = () => { setMobileNavOpen(false); setIsSidebarExpanded(false); };
 
   // Load bookings & login session & theme on mount
   useEffect(() => {
@@ -72,7 +86,7 @@ export default function App() {
         if (userObj && userObj.role) {
           setCurrentUser(userObj);
           if (userObj.role === 'guide') {
-            setActiveView('guide-portal');
+            setActiveView('schedule');
           }
         }
       } catch (e) {
@@ -114,7 +128,7 @@ export default function App() {
     setCurrentUser(user);
     sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(user));
     if (user.role === 'guide') {
-      setActiveView('guide-portal');
+      setActiveView('schedule');
     } else {
       setActiveView('dashboard');
     }
@@ -239,30 +253,29 @@ export default function App() {
       <div className="fixed inset-0 z-50 bg-[#f8fafc] flex flex-col items-center justify-center text-slate-900 overflow-hidden font-sans">
         {/* Abstract floating background circles inside splash */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-45">
-          <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-indigo-300 to-sky-300 blur-[90px] animate-blob-float-1" />
-          <div className="absolute bottom-[15%] right-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-emerald-200 to-amber-200 blur-[90px] animate-blob-float-2" />
+          <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[90px] animate-blob-float-1" />
+          <div className="absolute bottom-[15%] right-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[90px] animate-blob-float-2" />
         </div>
 
         <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-md">
-          {/* Animated Compass Icon */}
+          {/* Animated Logo mark */}
           <motion.div
             initial={{ scale: 0.7, opacity: 0, rotate: -180 }}
             animate={{ scale: 1, opacity: 1, rotate: 360 }}
             transition={{ type: "spring", stiffness: 60, damping: 15, duration: 1.5 }}
-            className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-indigo-600 to-emerald-500 flex items-center justify-center shadow-xl border border-white mb-8"
+            className="w-24 h-24 rounded-2xl bg-[#0b1220] flex items-center justify-center shadow-xl border border-white mb-8"
           >
-            <Compass className="w-12 h-12 text-white" />
+            <img src="/logo-mark.png" alt="SOLE" className="w-12 h-12 object-contain" />
           </motion.div>
 
-          {/* S U N T O U R Text Animation */}
-          <motion.h1
-            initial={{ letterSpacing: "0.1em", opacity: 0 }}
-            animate={{ letterSpacing: "0.4em", opacity: 1 }}
+          {/* SOLE wordmark */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.3, ease: "easeOut" }}
-            className="text-4xl font-extrabold tracking-[0.4em] text-slate-900 uppercase font-serif"
           >
-            Sole
-          </motion.h1>
+            <img src="/logo.png" alt="SOLE" className="h-9 w-auto" />
+          </motion.div>
 
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -270,7 +283,7 @@ export default function App() {
             transition={{ delay: 0.5, duration: 0.8 }}
             className="text-xs font-bold tracking-[0.2em] text-slate-500 uppercase mt-4"
           >
-            Luxury Travels Operator
+            Smart Operations and Logistics Engine
           </motion.p>
 
           {/* Elegant Slim Loading bar */}
@@ -279,7 +292,7 @@ export default function App() {
               initial={{ width: "0%" }}
               animate={{ width: "100%" }}
               transition={{ duration: 1.8, ease: "easeInOut" }}
-              className="h-full bg-gradient-to-r from-indigo-600 to-emerald-500 rounded-full"
+              className="h-full bg-gradient-to-r from-[#0b1220] to-orange-500 rounded-full"
             />
           </div>
 
@@ -301,229 +314,248 @@ export default function App() {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
-  // Guide user is isolated entirely to the guide manifest portal
-  if (currentUser.role === 'guide') {
-    return (
-      <div className="relative min-h-screen bg-white text-slate-800 font-sans overflow-x-hidden">
-        <div className="relative z-10">
-          <GuidePortalView
-            bookings={bookings}
-            currentUser={currentUser}
-            onToggleGuestCheckin={handleToggleGuestCheckin}
-            onLogout={handleLogout}
-          />
-        </div>
-      </div>
-    );
-  }
+
 
   return (
-    <div className={`relative flex h-screen w-screen overflow-hidden bg-white text-theme-text font-style-${activeFont} transition-all duration-300`}>
-      {/* Sidebar Navigation Panel (Auto-expands on hover) */}
-      <aside 
+    <div className={`relative flex h-screen w-screen overflow-hidden bg-theme-bg text-theme-text font-style-${activeFont} transition-all duration-300`}>
+      {/* Mobile top bar */}
+      <div className="lg:hidden fixed top-0 inset-x-0 z-30 h-16 flex items-center justify-between px-4 bg-theme-panel/90 backdrop-blur-2xl border-b border-theme-border shadow-sm">
+        <button
+          onClick={openMobileNav}
+          className="p-2 rounded-xl text-theme-text hover:bg-theme-accent-glow/40 transition"
+          aria-label="Open navigation"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-[#0b1220] flex items-center justify-center shrink-0">
+            <img src="/logo-mark.png" alt="SOLE" className="w-4.5 h-4.5 object-contain" />
+          </div>
+          <span className="text-sm font-black text-theme-text tracking-wide">Sole</span>
+        </div>
+        <div className="w-10" />
+      </div>
+
+      {/* Mobile drawer backdrop */}
+      {mobileNavOpen && (
+        <div
+          onClick={closeMobileNav}
+          className="lg:hidden fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm"
+        />
+      )}
+
+      {/* Sidebar Navigation Panel (drawer on mobile, hover-expand on desktop) */}
+      <aside
         onMouseEnter={() => setIsSidebarExpanded(true)}
-        onMouseLeave={() => setIsSidebarExpanded(false)}
-        className={`relative z-10 h-full border-r border-theme-border bg-theme-panel/75 backdrop-blur-2xl flex flex-col shrink-0 select-none transition-all duration-500 ease-in-out shadow-2xl shadow-black/5 ${
-          isSidebarExpanded ? 'w-64' : 'w-20'
-        }`}
+        onMouseLeave={() => { if (!mobileNavOpen) setIsSidebarExpanded(false); }}
+        className={`fixed lg:relative inset-y-0 left-0 z-50 lg:z-10 h-full border-r border-white/10 bg-gradient-to-b from-theme-gradient-start to-theme-gradient-end flex flex-col shrink-0 select-none transition-all duration-300 ease-in-out shadow-2xl shadow-black/15 w-64 rounded-r-[2.25rem] overflow-hidden ${
+          isSidebarExpanded ? 'lg:w-64' : 'lg:w-20'
+        } ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
+        {/* Mobile drawer close button */}
+        <button
+          onClick={closeMobileNav}
+          className="lg:hidden absolute top-4 right-4 p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition"
+          aria-label="Close navigation"
+        >
+          <X className="w-5 h-5" />
+        </button>
         {/* Brand Header Logo */}
         <div className="p-5 flex items-center gap-3 overflow-hidden">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-theme-gradient-start to-theme-gradient-end flex items-center justify-center shadow-lg shadow-theme-accent-glow border border-white/15 shrink-0">
-            <Compass className="w-5.5 h-5.5 text-white animate-[spin_20s_linear_infinite]" />
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shadow-lg border border-white/15 shrink-0">
+            <img src="/logo-mark.png" alt="SOLE" className="w-5.5 h-5.5 object-contain brightness-0 invert" />
           </div>
           <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${isSidebarExpanded ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0'}`}>
-            <h2 className="text-base font-black text-theme-text tracking-wide leading-none">Sole</h2>
-            <span className="text-[9px] font-bold tracking-widest text-theme-accent uppercase mt-1 block">Luxury Panel</span>
+            <h2 className="text-base font-black text-white tracking-wide leading-none">Sole</h2>
+            <span className="text-[9px] font-bold tracking-widest text-orange-200 uppercase mt-1 block">Operations Engine</span>
           </div>
         </div>
 
         {/* Navigation items list */}
-        <nav className="flex-grow px-3.5 space-y-1.5 overflow-y-auto mt-4">
-          <button
-            onClick={() => {
-              setActiveView('dashboard');
-              setEditBookingRef(null);
-            }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
-              activeView === 'dashboard'
-                ? 'bg-theme-accent-glow text-theme-accent border-l-[3px] border-theme-accent shadow-inner'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-accent-glow/30'
-            }`}
-          >
-            <LayoutDashboard className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              Dashboard
-            </span>
-          </button>
+        <nav onClick={() => { if (mobileNavOpen) closeMobileNav(); }} className="flex-grow px-3.5 space-y-1.5 overflow-y-auto mt-4 pt-8 lg:pt-0">
+          {isViewAllowed(currentUser.role, 'dashboard') && (
+            <button
+              onClick={() => {
+                setActiveView('dashboard');
+                setEditBookingRef(null);
+              }}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
+                activeView === 'dashboard'
+                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <LayoutDashboard className="w-5 h-5 shrink-0" />
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+                Dashboard
+              </span>
+            </button>
+          )}
  
-          <button
-            onClick={() => {
-              setActiveView('schedule');
-              setEditBookingRef(null);
-            }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all cursor-pointer ${
-              activeView === 'schedule'
-                ? 'bg-theme-accent-glow text-theme-accent border-l-[3px] border-theme-accent shadow-inner'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-accent-glow/30'
-            }`}
-          >
-            <Trello className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              Schedule Board
-            </span>
-          </button>
+          {isViewAllowed(currentUser.role, 'schedule') && (
+            <button
+              onClick={() => {
+                setActiveView('schedule');
+                setEditBookingRef(null);
+              }}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all cursor-pointer ${
+                activeView === 'schedule'
+                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Trello className="w-5 h-5 shrink-0" />
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+                Schedule Board
+              </span>
+            </button>
+          )}
 
-          <button
-            onClick={() => {
-              setActiveView('bookings');
-              setEditBookingRef(null);
-            }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
-              activeView === 'bookings'
-                ? 'bg-theme-accent-glow text-theme-accent border-l-[3px] border-theme-accent shadow-inner'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-accent-glow/30'
-            }`}
-          >
-            <CalendarDays className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              Reservations
-            </span>
-          </button>
+          {isViewAllowed(currentUser.role, 'bookings') && (
+            <button
+              onClick={() => {
+                setActiveView('bookings');
+                setEditBookingRef(null);
+              }}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
+                activeView === 'bookings'
+                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <CalendarDays className="w-5 h-5 shrink-0" />
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+                Reservations
+              </span>
+            </button>
+          )}
 
-          <button
-            onClick={() => {
-              setActiveView('reports');
-              setEditBookingRef(null);
-            }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
-              activeView === 'reports'
-                ? 'bg-theme-accent-glow text-theme-accent border-l-[3px] border-theme-accent shadow-inner'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-accent-glow/30'
-            }`}
-          >
-            <FileSpreadsheet className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              Daily Manifests
-            </span>
-          </button>
+          {isViewAllowed(currentUser.role, 'reports') && (
+            <button
+              onClick={() => {
+                setActiveView('reports');
+                setEditBookingRef(null);
+              }}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
+                activeView === 'reports'
+                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <FileSpreadsheet className="w-5 h-5 shrink-0" />
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+                Daily Manifests
+              </span>
+            </button>
+          )}
 
-          <button
-            onClick={() => {
-              setActiveView('customers');
-              setEditBookingRef(null);
-            }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
-              activeView === 'customers'
-                ? 'bg-theme-accent-glow text-theme-accent border-l-[3px] border-theme-accent shadow-inner'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-accent-glow/30'
-            }`}
-          >
-            <Users className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              CRM / Customers
-            </span>
-          </button>
+          {isViewAllowed(currentUser.role, 'customers') && (
+            <button
+              onClick={() => {
+                setActiveView('customers');
+                setEditBookingRef(null);
+              }}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
+                activeView === 'customers'
+                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Users className="w-5 h-5 shrink-0" />
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+                CRM / Customers
+              </span>
+            </button>
+          )}
 
-          <button
-            onClick={() => {
-              setActiveView('products');
-              setEditBookingRef(null);
-            }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all cursor-pointer ${
-              activeView === 'products'
-                ? 'bg-theme-accent-glow text-theme-accent border-l-[3px] border-theme-accent shadow-inner'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-accent-glow/30'
-            }`}
-          >
-            <Layers className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              Product Catalog
-            </span>
-          </button>
+          {isViewAllowed(currentUser.role, 'products') && (
+            <button
+              onClick={() => {
+                setActiveView('products');
+                setEditBookingRef(null);
+              }}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all cursor-pointer ${
+                activeView === 'products'
+                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Layers className="w-5 h-5 shrink-0" />
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+                Product Catalog
+              </span>
+            </button>
+          )}
 
-          <button
-            onClick={() => {
-              setActiveView('vehicles');
-              setEditBookingRef(null);
-            }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
-              activeView === 'vehicles'
-                ? 'bg-theme-accent-glow text-theme-accent border-l-[3px] border-theme-accent shadow-inner'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-accent-glow/30'
-            }`}
-          >
-            <Car className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              VIP Fleet
-            </span>
-          </button>
+          {isViewAllowed(currentUser.role, 'guides') && (
+            <button
+              onClick={() => {
+                setActiveView('guides');
+                setEditBookingRef(null);
+              }}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
+                activeView === 'guides'
+                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Sparkles className="w-5 h-5 shrink-0" />
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+                Guides & Staff
+              </span>
+            </button>
+          )}
 
-          <button
-            onClick={() => {
-              setActiveView('guides');
-              setEditBookingRef(null);
-            }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
-              activeView === 'guides'
-                ? 'bg-theme-accent-glow text-theme-accent border-l-[3px] border-theme-accent shadow-inner'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-accent-glow/30'
-            }`}
-          >
-            <Sparkles className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              Guides & Staff
-            </span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveView('finance');
-              setEditBookingRef(null);
-            }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
-              activeView === 'finance'
-                ? 'bg-theme-accent-glow text-theme-accent border-l-[3px] border-theme-accent shadow-inner'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-accent-glow/30'
-            }`}
-          >
-            <Coins className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              Corporate Finance
-            </span>
-          </button>
+          {isViewAllowed(currentUser.role, 'finance') && (
+            <button
+              onClick={() => {
+                setActiveView('finance');
+                setEditBookingRef(null);
+              }}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
+                activeView === 'finance'
+                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Coins className="w-5 h-5 shrink-0" />
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+                Corporate Finance
+              </span>
+            </button>
+          )}
         </nav>
 
-        {/* Sidebar Footer - Clean Manager profile card & Logout Trigger */}
-        <div className="p-4 border-t border-theme-border shrink-0 bg-transparent">
+        {/* Sidebar Footer - Clean profile card & Logout Trigger */}
+        <div className="p-4 border-t border-white/10 shrink-0 bg-transparent">
           <button
             onClick={() => setShowLogoutConfirm(true)}
             className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all duration-300 ${
               isSidebarExpanded 
-                ? 'bg-theme-accent-glow/50 hover:bg-rose-500/10 border border-theme-border hover:border-rose-500/20 text-theme-text' 
-                : 'justify-center text-theme-muted hover:text-rose-400 hover:bg-rose-500/10 border border-transparent'
+                ? 'bg-white/10 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/30 text-white' 
+                : 'justify-center text-white/70 hover:text-rose-400 hover:bg-rose-500/20 border border-transparent'
             }`}
-            title="Log Out (Manager)"
+            title={`Log Out (${currentUser.username})`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-7 h-7 rounded-lg bg-gradient-to-tr from-theme-gradient-start to-theme-gradient-end flex items-center justify-center font-extrabold text-xs text-white shrink-0 shadow-md">
+              <span className="w-7 h-7 rounded-lg bg-white flex items-center justify-center font-black text-xs text-[#0b1220] shrink-0 shadow-md">
                 {currentUser.username[0].toUpperCase()}
               </span>
-              <span className={`text-xs font-extrabold text-theme-text truncate transition-all duration-300 ${
-                isSidebarExpanded ? 'opacity-100 max-w-[100px]' : 'opacity-0 max-w-0 pointer-events-none'
+              <span className={`text-xs font-black text-white truncate transition-all duration-300 ${
+                isSidebarExpanded ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0 pointer-events-none'
               }`}>
-                Manager
+                {currentUser.username}
               </span>
             </div>
             {isSidebarExpanded && (
-              <LogOut className="w-4 h-4 text-theme-muted hover:text-rose-500 transition-colors shrink-0 ml-1" />
+              <LogOut className="w-4 h-4 text-white/70 hover:text-rose-400 transition-colors shrink-0 ml-1" />
             )}
           </button>
         </div>
       </aside>
 
       {/* Main viewport */}
-      <main className="flex-grow h-full overflow-y-auto p-8 sm:p-10 flex flex-col gap-8 relative z-20 bg-transparent">
+      <main className="flex-grow h-full overflow-y-auto p-4 pt-20 sm:p-6 sm:pt-20 lg:p-10 flex flex-col gap-8 relative z-20 bg-transparent">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeView}
@@ -533,7 +565,7 @@ export default function App() {
             transition={{ duration: 0.2 }}
             className="flex-grow flex flex-col"
           >
-            {activeView === 'dashboard' && (
+            {activeView === 'dashboard' && isViewAllowed(currentUser.role, 'dashboard') && (
               <DashboardView
                 bookings={bookings}
                 currentUser={currentUser}
@@ -542,7 +574,7 @@ export default function App() {
               />
             )}
 
-            {activeView === 'schedule' && (
+            {activeView === 'schedule' && isViewAllowed(currentUser.role, 'schedule') && (
               <ScheduleView
                 bookings={bookings}
                 currentUser={currentUser}
@@ -550,7 +582,7 @@ export default function App() {
               />
             )}
 
-            {activeView === 'bookings' && (
+            {activeView === 'bookings' && isViewAllowed(currentUser.role, 'bookings') && (
               <BookingsView
                 bookings={bookings}
                 currentUser={currentUser}
@@ -561,34 +593,43 @@ export default function App() {
               />
             )}
 
-            {activeView === 'products' && (
+            {activeView === 'products' && isViewAllowed(currentUser.role, 'products') && (
               <ProductsView />
             )}
 
-            {activeView === 'reports' && (
+            {activeView === 'reports' && isViewAllowed(currentUser.role, 'reports') && (
               <ReportsView
                 bookings={bookings}
                 currentUser={currentUser}
               />
             )}
 
-            {activeView === 'customers' && (
+            {activeView === 'customers' && isViewAllowed(currentUser.role, 'customers') && (
               <CustomersView />
             )}
 
-            {activeView === 'vehicles' && (
-              <VehiclesView />
-            )}
-
-            {activeView === 'guides' && (
+            {activeView === 'guides' && isViewAllowed(currentUser.role, 'guides') && (
               <GuidesView />
             )}
 
-            {activeView === 'finance' && (
+            {activeView === 'finance' && isViewAllowed(currentUser.role, 'finance') && (
               <FinanceView
                 bookings={bookings}
                 onUpdateBookingPaymentStatus={handleUpdateBookingPaymentStatus}
               />
+            )}
+
+            {!isViewAllowed(currentUser.role, activeView) && (
+              <div className="flex flex-col items-center justify-center text-center p-8 bg-white/60 border border-theme-border rounded-3xl shadow-sm my-auto">
+                <h3 className="text-lg font-bold text-rose-600">Access Denied</h3>
+                <p className="text-xs text-theme-muted mt-1">You do not have permission to access this page.</p>
+                <button
+                  onClick={() => setActiveView(currentUser.role === 'guide' ? 'schedule' : 'dashboard')}
+                  className="mt-4 bg-[#0b1220] hover:bg-[#161f33] hover:scale-105 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition duration-200 cursor-pointer"
+                >
+                  Return to Home
+                </button>
+              </div>
             )}
 
           </motion.div>

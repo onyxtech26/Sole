@@ -223,12 +223,12 @@ export default function ProductsView() {
       {/* View Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-sans">Product Catalog Manager</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-sans">Product Catalog Manager</h1>
           <p className="text-slate-500 text-sm mt-1 font-semibold">Define your luxury catalog, customize tour grade options (TG1-TG3), and set participant limits.</p>
         </div>
         <button
           onClick={() => setShowAddProductModal(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 transition shadow-lg shadow-indigo-600/15 cursor-pointer hover:scale-105 active:scale-95 duration-200"
+          className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 transition shadow-lg shadow-orange-600/15 cursor-pointer hover:scale-105 active:scale-95 duration-200"
         >
           <Plus className="w-4 h-4" />
           <span>New Catalog Item</span>
@@ -247,7 +247,7 @@ export default function ProductsView() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search catalog by code or label..."
-                className="w-full bg-white/50 border border-slate-200/80 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-800 font-semibold placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white"
+                className="w-full bg-white/50 border border-slate-200/80 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-800 font-semibold placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white"
               />
             </div>
           </div>
@@ -262,12 +262,12 @@ export default function ProductsView() {
                   setNewGradeCode(`TG${p.grades.length + 1}`);
                 }}
                 className={`bg-white/50 border rounded-2xl p-5 shadow-sm cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
-                  selectedProduct?.code === p.code ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-200/80'
+                  selectedProduct?.code === p.code ? 'border-orange-500 ring-2 ring-orange-500/10' : 'border-slate-200/80'
                 }`}
               >
                 <div className="flex justify-between items-start pb-3 border-b border-slate-100">
                   <div>
-                    <span className="text-[10px] font-bold text-indigo-600 font-mono tracking-wider">{p.code}</span>
+                    <span className="text-[10px] font-bold text-orange-600 font-mono tracking-wider">{p.code}</span>
                     <h3 className="font-extrabold text-sm text-slate-800 leading-tight mt-0.5">{p.label}</h3>
                   </div>
                   <button
@@ -294,7 +294,7 @@ export default function ProductsView() {
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
                   {p.grades.map(g => (
-                    <span key={g.code} className="px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-600 font-bold text-[9px] rounded-lg">
+                    <span key={g.code} className="px-2 py-0.5 bg-orange-50 border border-orange-100 text-orange-600 font-bold text-[9px] rounded-lg">
                       {g.code}: {g.capacity} pax
                     </span>
                   ))}
@@ -309,7 +309,7 @@ export default function ProductsView() {
           {selectedProduct ? (
             <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl space-y-6 shadow-sm">
               <div>
-                <span className="text-[10px] font-bold text-indigo-600 font-mono uppercase tracking-widest">Catalog Subgrade Config</span>
+                <span className="text-[10px] font-bold text-orange-600 font-mono uppercase tracking-widest">Catalog Subgrade Config</span>
                 <h3 className="text-base font-extrabold text-slate-900 font-sans mt-0.5">{selectedProduct.label} Options</h3>
               </div>
 
@@ -320,7 +320,7 @@ export default function ProductsView() {
                   <div key={g.code} className="p-3 bg-white/70 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm">
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-600 font-mono font-black text-[9px] rounded">
+                        <span className="px-1.5 py-0.5 bg-orange-50 border border-orange-100 text-orange-600 font-mono font-black text-[9px] rounded">
                           {g.code}
                         </span>
                         <strong className="text-xs text-slate-800">{g.name}</strong>
@@ -350,7 +350,7 @@ export default function ProductsView() {
                       required
                       value={newGradeCode}
                       onChange={e => setNewGradeCode(e.target.value.toUpperCase())}
-                      className="bg-white/60 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                      className="bg-white/60 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-orange-500"
                     />
                   </div>
                   <div className="col-span-2 flex flex-col gap-1">
@@ -361,7 +361,7 @@ export default function ProductsView() {
                       value={newGradeName}
                       onChange={e => setNewGradeName(e.target.value)}
                       placeholder="e.g. Couples Special"
-                      className="bg-white/60 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                      className="bg-white/60 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-orange-500"
                     />
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export default function ProductsView() {
                     min={1}
                     value={newGradeCap}
                     onChange={e => setNewGradeCap(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    className="bg-white/60 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                    className="bg-white/60 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-orange-500"
                   />
                 </div>
 
@@ -419,8 +419,8 @@ export default function ProductsView() {
                   <X className="w-5 h-5" />
                 </button>
 
-                <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-4">
-                  <ShoppingBag className="w-5 h-5 text-indigo-600" />
+                <div className="w-10 h-10 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center mb-4">
+                  <ShoppingBag className="w-5 h-5 text-orange-600" />
                 </div>
 
                 <h3 className="text-base font-extrabold text-slate-900 font-sans mb-1">Create Catalog Product</h3>
@@ -435,7 +435,7 @@ export default function ProductsView() {
                       placeholder="e.g. 5524558P20"
                       value={newProdCode}
                       onChange={e => setNewProdCode(e.target.value.trim())}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:bg-white"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-orange-500 focus:bg-white"
                     />
                   </div>
 
@@ -447,7 +447,7 @@ export default function ProductsView() {
                       placeholder="e.g. Colosseum Night Walk"
                       value={newProdLabel}
                       onChange={e => setNewProdLabel(e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:bg-white"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-orange-500 focus:bg-white"
                     />
                   </div>
 
@@ -460,7 +460,7 @@ export default function ProductsView() {
                         placeholder="e.g. Night Colosseum"
                         value={newProdName}
                         onChange={e => setNewProdName(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:bg-white"
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-orange-500 focus:bg-white"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -470,7 +470,7 @@ export default function ProductsView() {
                         min={1}
                         value={newProdCap}
                         onChange={e => setNewProdCap(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:bg-white"
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-orange-500 focus:bg-white"
                       />
                     </div>
                   </div>
@@ -485,7 +485,7 @@ export default function ProductsView() {
                     </button>
                     <button
                       type="submit"
-                      className="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 shadow-md cursor-pointer active:scale-95 transition"
+                      className="bg-orange-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-orange-700 shadow-md cursor-pointer active:scale-95 transition"
                     >
                       Save Product
                     </button>
@@ -519,7 +519,7 @@ export default function ProductsView() {
                 </div>
                 <h3 className="font-extrabold text-slate-900 text-base mb-2">Delete Catalog Product</h3>
                 <p className="text-slate-500 text-xs font-semibold leading-relaxed mb-5">
-                  Are you sure you want to delete product <span className="font-mono text-indigo-600 font-extrabold">{deleteProductConfirmCode}</span>? This catalog item and its grades will be deleted.
+                  Are you sure you want to delete product <span className="font-mono text-orange-600 font-extrabold">{deleteProductConfirmCode}</span>? This catalog item and its grades will be deleted.
                 </p>
                 <div className="flex gap-2.5 justify-end">
                   <button
@@ -565,7 +565,7 @@ export default function ProductsView() {
                 </div>
                 <h3 className="font-extrabold text-slate-900 text-base mb-2">Delete Option Grade</h3>
                 <p className="text-slate-500 text-xs font-semibold leading-relaxed mb-5">
-                  Are you sure you want to delete option grade <span className="font-mono text-indigo-600 font-extrabold">{deleteGradeConfirmCode}</span> under this product?
+                  Are you sure you want to delete option grade <span className="font-mono text-orange-600 font-extrabold">{deleteGradeConfirmCode}</span> under this product?
                 </p>
                 <div className="flex gap-2.5 justify-end">
                   <button

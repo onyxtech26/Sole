@@ -35,11 +35,9 @@ export const ViatorParser = {
       status: 'Confirmed',
       paymentStatus: 'Paid',
       assignedGuide: '',
-      assignedVehicle: 'None',
       assignedDriver: 'None',
       okStatus: true,
-      checkedInGuests: [],
-      vehicleStatus: 'not_started'
+      checkedInGuests: []
     };
 
     // 1. Parse Booking Reference (e.g., BR-1414119089 or BR-123456789)

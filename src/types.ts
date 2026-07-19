@@ -20,13 +20,12 @@ export interface Booking {
   status: 'Confirmed' | 'Pending' | 'Cancelled';
   paymentStatus: 'Paid' | 'Partially Paid' | 'Unpaid' | 'Refunded';
   assignedGuide: string;
-  assignedVehicle: string;
   assignedDriver: string;
   okStatus: boolean;
   checkedInGuests: number[]; // indices of travelers checked in
   serviceLineItems?: { description: string; qty: number; unitPrice: number; total: number }[];
   notes?: string;
-  vehicleStatus?: 'dispatched' | 'en_route' | 'completed' | 'not_started';
+  namesLocked?: boolean; // passport names verified & locked for ticket issuance
 }
 
 export interface User {
@@ -34,21 +33,11 @@ export interface User {
   role: 'manager' | 'staff' | 'guide';
 }
 
-export interface Vehicle {
-  id: string;
-  name: string;
-  type: 'Mercedes S-Class' | 'Mercedes V-Class' | 'Range Rover' | 'Luxury Coach' | 'Tesla Model X';
-  capacity: number;
-  driverName: string;
-  availability: 'Available' | 'On Tour' | 'Maintenance' | 'Resting';
-  maintenanceStatus: 'Excellent' | 'Service Required' | 'Scheduled';
-  licensePlate: string;
-  image: string;
-}
-
 export interface GuideProfile {
   id: string;
   name: string;
+  role: 'Guide' | 'Staff';
+  phone: string;
   languages: string[];
   skills: string[];
   performanceRating: number; // 1-5 stars
@@ -80,9 +69,11 @@ export interface Invoice {
   status: 'Paid' | 'Unpaid' | 'Overdue';
 }
 
+export type ExpenseCategory = 'Guide' | 'Ticket' | 'Radio' | 'Staff Salary' | 'Other';
+
 export interface Expense {
   id: string;
-  category: 'Fuel' | 'Catering' | 'Tickets/Fees' | 'Guide Fees' | 'Vehicle Repair' | 'Marketing' | 'Others';
+  category: ExpenseCategory;
   amount: number;
   date: string;
   description: string;

@@ -32,14 +32,14 @@ html, body {
 :root, html {
   --bg-primary: #ffffff;
   --bg-panel: rgba(255, 255, 255, 0.7);
-  --color-accent: #4f46e5; /* Premium Indigo */
-  --color-accent-glow: rgba(79, 70, 229, 0.05);
-  --color-accent-border: rgba(79, 70, 229, 0.15);
-  --text-primary: #0f172a; /* Slate 900 */
+  --color-accent: #fd9707; /* SOLE Orange */
+  --color-accent-glow: rgba(253, 151, 7, 0.08);
+  --color-accent-border: rgba(253, 151, 7, 0.2);
+  --text-primary: #0b1220; /* SOLE Navy */
   --text-secondary: #475569; /* Slate 600 */
-  --border-primary: rgba(15, 23, 42, 0.06);
-  --gradient-start: #4f46e5; /* Indigo 600 */
-  --gradient-end: #10b981; /* Emerald 500 */
+  --border-primary: rgba(11, 18, 32, 0.06);
+  --gradient-start: #0b1220; /* SOLE Navy */
+  --gradient-end: #fd9707; /* SOLE Orange */
 }
 
 /* Custom Themes - Scoped by CSS classes on html element */
@@ -116,16 +116,16 @@ html.theme-terracotta {
 
 /* Classic Alabaster (Light Theme) */
 html.theme-alabaster, [data-theme="light"] {
-  --bg-primary: #ffffff; /* pure white background */
+  --bg-primary: #f4f6f9; /* premium soft slate-grey background to let cards pop */
   --bg-panel: rgba(255, 255, 255, 0.7);
-  --color-accent: #4f46e5; /* Premium Indigo */
-  --color-accent-glow: rgba(79, 70, 229, 0.05);
-  --color-accent-border: rgba(79, 70, 229, 0.15);
-  --text-primary: #0f172a;
+  --color-accent: #fd9707; /* SOLE Orange */
+  --color-accent-glow: rgba(253, 151, 7, 0.08);
+  --color-accent-border: rgba(253, 151, 7, 0.2);
+  --text-primary: #0b1220;
   --text-secondary: #475569;
-  --border-primary: rgba(15, 23, 42, 0.06);
-  --gradient-start: #4f46e5; /* Indigo 600 */
-  --gradient-end: #10b981; /* Emerald 500 */
+  --border-primary: rgba(11, 18, 32, 0.06);
+  --gradient-start: #0b1220; /* SOLE Navy */
+  --gradient-end: #fd9707; /* SOLE Orange */
 }
 
 /* Font styles custom overrides classes */
@@ -139,20 +139,15 @@ html.theme-alabaster, [data-theme="light"] {
   font-family: var(--font-mono) !important;
 }
 
-/* Scrollbar styles */
+/* Scrollbar styles - Hidden globally per user request */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
 }
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+* {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
 }
 
 /* Media Print Overrides for manifest downloads */

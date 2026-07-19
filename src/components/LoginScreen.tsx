@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Compass, Eye, EyeOff, ShieldAlert } from 'lucide-react';
+import { Eye, EyeOff, ShieldAlert } from 'lucide-react';
 import { User } from '../types';
 
 interface LoginScreenProps {
@@ -19,27 +19,39 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
     if (trimmedUser === 'admin' && password === 'admin') {
       setError('');
-      onLogin({ username: 'admin', role: 'manager' });
+      onLogin({ username: 'Admin', role: 'manager' });
+    } else if (trimmedUser === 'staff' && password === 'staff') {
+      setError('');
+      onLogin({ username: 'Staff User', role: 'staff' });
+    } else if (trimmedUser === 'guide' && password === 'guide') {
+      setError('');
+      onLogin({ username: 'Guide User', role: 'guide' });
     } else {
-      setError("❌ Incorrect username or password. Try 'admin/admin'");
+      setError("❌ Incorrect username or password. Try admin/admin, staff/staff, or guide/guide");
     }
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-white flex items-center justify-center z-50 p-4 overflow-hidden font-sans">
+    <div className="fixed inset-0 w-screen h-screen bg-[#f8fafc] flex items-center justify-center z-50 p-4 overflow-hidden font-sans">
+      
+      {/* Splash Screen Style Ambient Gradient Blobs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-60">
+        <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[90px] animate-blob-float-1" />
+        <div className="absolute bottom-[15%] right-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[90px] animate-blob-float-2" />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 80, damping: 15 }}
-        className="relative z-10 bg-white/40 backdrop-blur-3xl border border-white/50 rounded-3xl w-full max-w-md p-8 md:p-10 shadow-[0_20px_50px_rgba(31,38,135,0.06)]"
+        className="relative z-10 bg-white/70 backdrop-blur-3xl border border-orange-500/20 rounded-[2.25rem] w-full max-w-md p-8 md:p-10 shadow-[0_0_35px_rgba(253,151,7,0.25),0_10px_30px_rgba(253,151,7,0.15),0_20px_50px_rgba(0,0,0,0.04)]"
       >
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-600/20 border border-white/25 animate-bounce">
-            <Compass className="w-7 h-7 text-white" />
-          </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-serif">
-            SOLE
-          </h2>
+          <img
+            src="/logo.png"
+            alt="SOLE"
+            className="h-14 w-auto mx-auto mb-4 drop-shadow-sm"
+          />
           <p className="text-slate-500 text-xs font-bold tracking-widest uppercase mt-1">Operations Portal Login</p>
         </div>
 
@@ -52,7 +64,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter username"
-              className="w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3.5 text-slate-800 text-sm outline-none transition duration-300 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 placeholder-slate-400"
+              className="w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3.5 text-slate-800 text-sm outline-none transition duration-300 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 placeholder-slate-400"
             />
           </div>
 
@@ -65,12 +77,12 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3.5 pr-10 text-slate-800 text-sm outline-none transition duration-300 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 placeholder-slate-400"
+                className="w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3.5 pr-10 text-slate-800 text-sm outline-none transition duration-300 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 placeholder-slate-400"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition duration-200"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#fd9707] transition duration-200"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -90,11 +102,29 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 text-sm cursor-pointer"
+            className="w-full bg-[#0b1220] hover:bg-[#161f33] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-500/10 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 text-sm cursor-pointer"
           >
             Sign In
           </button>
         </form>
+
+        <div className="mt-6 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl text-[11px] text-slate-500 space-y-2">
+          <p className="font-bold text-slate-600 uppercase tracking-wider">Demo Accounts</p>
+          <div className="grid grid-cols-3 gap-2 text-center font-mono">
+            <div className="bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
+              <span className="font-bold block text-slate-700">Admin</span>
+              admin / admin
+            </div>
+            <div className="bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
+              <span className="font-bold block text-slate-700">Staff</span>
+              staff / staff
+            </div>
+            <div className="bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
+              <span className="font-bold block text-slate-700">Guide</span>
+              guide / guide
+            </div>
+          </div>
+        </div>
       </motion.div>
     </div>
   );

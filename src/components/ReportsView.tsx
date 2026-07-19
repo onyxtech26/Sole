@@ -40,7 +40,7 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
 
         <button
           onClick={handlePrint}
-          className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-indigo-600/15 transition shrink-0 text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+          className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-orange-600/15 transition shrink-0 text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
         >
           <Printer className="w-4.5 h-4.5" />
           <span>Print Manifest / Export PDF</span>

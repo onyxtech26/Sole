@@ -236,19 +236,13 @@ export default function AddBookingView({
         ? (bookings.find(b => b.bookingRef === editBookingRef)?.paymentStatus || 'Unpaid')
         : 'Unpaid',
       assignedGuide,
-      assignedVehicle: editBookingRef
-        ? (bookings.find(b => b.bookingRef === editBookingRef)?.assignedVehicle || 'None')
-        : 'None',
       assignedDriver: editBookingRef
         ? (bookings.find(b => b.bookingRef === editBookingRef)?.assignedDriver || 'None')
         : 'None',
       okStatus: status === 'Confirmed',
-      checkedInGuests: editBookingRef 
+      checkedInGuests: editBookingRef
         ? (bookings.find(b => b.bookingRef === editBookingRef)?.checkedInGuests || [])
-        : [],
-      vehicleStatus: editBookingRef
-        ? (bookings.find(b => b.bookingRef === editBookingRef)?.vehicleStatus || 'not_started')
-        : 'not_started'
+        : []
     };
 
     onSaveBooking(updatedBooking);
@@ -258,7 +252,7 @@ export default function AddBookingView({
   return (
     <div className="space-y-6 animate-fade-in relative z-10 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-sans text-center">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-sans text-center">
           {editBookingRef ? 'Edit Reservation Details' : 'Manual Reservation Entry'}
         </h1>
         <p className="text-slate-500 text-sm mt-1 font-semibold text-center">
@@ -271,7 +265,7 @@ export default function AddBookingView({
         <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl shadow-xl shadow-black/[0.01] space-y-4">
           <div>
             <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
-              <Sparkles className="w-4.5 h-4.5 text-indigo-600 animate-[pulse_2s_infinite]" />
+              <Sparkles className="w-4.5 h-4.5 text-orange-600 animate-[pulse_2s_infinite]" />
               <span>AI Paste & Fill Accelerator</span>
             </h3>
             <p className="text-slate-500 text-xs mt-0.5 font-medium">
@@ -285,7 +279,7 @@ export default function AddBookingView({
               onChange={handlePasteChange}
               placeholder="Paste Viator confirmation details here..."
               rows={3}
-              className="w-full bg-white/60 border border-slate-200 rounded-xl p-3.5 text-xs font-semibold outline-none transition focus:border-indigo-500"
+              className="w-full bg-white/60 border border-slate-200 rounded-xl p-3.5 text-xs font-semibold outline-none transition focus:border-orange-500"
             />
 
             {parserStatus && (
@@ -327,7 +321,7 @@ export default function AddBookingView({
                   value={bookingRef}
                   onChange={(e) => setBookingRef(e.target.value)}
                   placeholder="BR-XXXXXXXXXX"
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     editBookingRef ? 'opacity-65 cursor-not-allowed bg-slate-100 font-bold' : ''
                   } ${glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''}`}
                 />
@@ -339,7 +333,7 @@ export default function AddBookingView({
                 <select
                   value={assignedGuide}
                   onChange={(e) => setAssignedGuide(e.target.value)}
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none cursor-pointer focus:border-indigo-500 focus:bg-white ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none cursor-pointer focus:border-orange-500 focus:bg-white ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 >
@@ -357,7 +351,7 @@ export default function AddBookingView({
                   required
                   value={tourName}
                   onChange={(e) => setTourName(e.target.value)}
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none cursor-pointer focus:border-indigo-500 focus:bg-white ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none cursor-pointer focus:border-orange-500 focus:bg-white ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 >
@@ -379,7 +373,7 @@ export default function AddBookingView({
                   value={productCode}
                   onChange={(e) => setProductCode(e.target.value)}
                   placeholder="e.g. 5524558P4"
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 />
@@ -403,7 +397,7 @@ export default function AddBookingView({
                   required
                   value={tourTime}
                   onChange={(e) => setTourTime(e.target.value)}
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 />
@@ -418,7 +412,7 @@ export default function AddBookingView({
                   value={leadTraveler}
                   onChange={(e) => setLeadTraveler(e.target.value)}
                   placeholder="Lead Guest Name"
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 />
@@ -432,7 +426,7 @@ export default function AddBookingView({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="e.g. +1 555-555-5555"
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 />
@@ -447,7 +441,7 @@ export default function AddBookingView({
                   min={1}
                   value={paxAdults}
                   onChange={(e) => setPaxAdults(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 />
@@ -462,7 +456,7 @@ export default function AddBookingView({
                   min={0}
                   value={paxChildren}
                   onChange={(e) => setPaxChildren(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 />
@@ -479,7 +473,7 @@ export default function AddBookingView({
                   value={amount}
                   onChange={(e) => setAmount(Math.max(0, parseFloat(e.target.value) || 0))}
                   placeholder="0.00"
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 />
@@ -491,7 +485,7 @@ export default function AddBookingView({
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none cursor-pointer focus:border-indigo-500 focus:bg-white ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none cursor-pointer focus:border-orange-500 focus:bg-white ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 >
@@ -509,7 +503,7 @@ export default function AddBookingView({
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as Booking['status'])}
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none cursor-pointer focus:border-indigo-500 focus:bg-white ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none cursor-pointer focus:border-orange-500 focus:bg-white ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 >
@@ -527,7 +521,7 @@ export default function AddBookingView({
                   value={meetingPoint}
                   onChange={(e) => setMeetingPoint(e.target.value)}
                   placeholder="Meeting Point details"
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 />
@@ -543,7 +537,7 @@ export default function AddBookingView({
                   onChange={(e) => setTravelersText(e.target.value)}
                   placeholder="John Doe (Adult)&#10;Jane Doe (Adult)&#10;Jack Doe (Child)"
                   rows={4}
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 ${
+                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 />
@@ -560,7 +554,7 @@ export default function AddBookingView({
               </button>
               <button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl text-sm shadow-lg shadow-indigo-600/15 transition flex items-center gap-2"
+                className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 py-3 rounded-xl text-sm shadow-lg shadow-orange-600/15 transition flex items-center gap-2"
               >
                 {editBookingRef ? <Edit className="w-4.5 h-4.5" /> : <Plus className="w-4.5 h-4.5" />}
                 <span>{editBookingRef ? 'Update Booking' : 'Save Reservation'}</span>

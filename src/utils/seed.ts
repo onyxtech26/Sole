@@ -1,4 +1,4 @@
-import { Booking, Vehicle, GuideProfile, Expense, Customer, Notification } from '../types';
+import { Booking, GuideProfile, Expense, Customer, Notification } from '../types';
 
 export function getRelativeDateString(daysOffset: number): string {
   const d = new Date();
@@ -27,11 +27,9 @@ export const DEFAULT_SEED_DATA: Booking[] = [
     status: 'Confirmed',
     paymentStatus: 'Paid',
     assignedGuide: 'Alexander Vance',
-    assignedVehicle: 'Mercedes S-Class (Rome-A)',
     assignedDriver: 'Marcello Rossi',
     okStatus: true,
     checkedInGuests: [],
-    vehicleStatus: 'completed',
     notes: 'VIP customer. Request bottled sparkling water and English-speaking local driver.'
   },
   {
@@ -51,11 +49,9 @@ export const DEFAULT_SEED_DATA: Booking[] = [
     status: 'Confirmed',
     paymentStatus: 'Paid',
     assignedGuide: 'Colosseo guide',
-    assignedVehicle: 'Mercedes V-Class (Rome-B)',
     assignedDriver: 'Giovanni Silva',
     okStatus: true,
     checkedInGuests: [],
-    vehicleStatus: 'en_route',
     notes: 'First time visiting Rome.'
   },
   {
@@ -81,11 +77,9 @@ export const DEFAULT_SEED_DATA: Booking[] = [
     status: 'Confirmed',
     paymentStatus: 'Paid',
     assignedGuide: 'Alexander Vance',
-    assignedVehicle: 'Luxury Coach (Rome-F)',
     assignedDriver: 'Fabrizio Moretti',
     okStatus: true,
     checkedInGuests: [],
-    vehicleStatus: 'completed',
     notes: 'Requires 3 booster seats for children.'
   },
   {
@@ -105,11 +99,9 @@ export const DEFAULT_SEED_DATA: Booking[] = [
     status: 'Confirmed',
     paymentStatus: 'Unpaid',
     assignedGuide: 'Sofia Loren',
-    assignedVehicle: 'Mercedes S-Class (Rome-C)',
     assignedDriver: 'Marcello Rossi',
     okStatus: true,
     checkedInGuests: [],
-    vehicleStatus: 'not_started'
   },
   {
     bookingRef: 'BR-1414119090',
@@ -128,11 +120,9 @@ export const DEFAULT_SEED_DATA: Booking[] = [
     status: 'Confirmed',
     paymentStatus: 'Partially Paid',
     assignedGuide: 'Marco Aurelio',
-    assignedVehicle: 'Tesla Model X (Rome-E)',
     assignedDriver: 'Gianni Agnelli',
     okStatus: true,
     checkedInGuests: [],
-    vehicleStatus: 'not_started'
   },
   {
     bookingRef: 'BR-1414119100',
@@ -151,58 +141,9 @@ export const DEFAULT_SEED_DATA: Booking[] = [
     status: 'Cancelled',
     paymentStatus: 'Refunded',
     assignedGuide: 'Famagusta guide',
-    assignedVehicle: 'None',
     assignedDriver: 'None',
     okStatus: false,
     checkedInGuests: [],
-    vehicleStatus: 'not_started'
-  }
-];
-
-export const SEED_VEHICLES: Vehicle[] = [
-  {
-    id: 'V-101',
-    name: 'S-Class Black Edition',
-    type: 'Mercedes S-Class',
-    capacity: 3,
-    driverName: 'Marcello Rossi',
-    availability: 'Available',
-    maintenanceStatus: 'Excellent',
-    licensePlate: 'ROM-992-VE',
-    image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=300&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 'V-102',
-    name: 'V-Class Executive Lounge',
-    type: 'Mercedes V-Class',
-    capacity: 7,
-    driverName: 'Giovanni Silva',
-    availability: 'On Tour',
-    maintenanceStatus: 'Excellent',
-    licensePlate: 'ROM-311-EL',
-    image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=300&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 'V-103',
-    name: 'Range Rover Autobiography',
-    type: 'Range Rover',
-    capacity: 4,
-    driverName: 'Lorenzo Gatti',
-    availability: 'Maintenance',
-    maintenanceStatus: 'Service Required',
-    licensePlate: 'ROM-448-RR',
-    image: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=300&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 'V-104',
-    name: 'Tesla Model X Plaid',
-    type: 'Tesla Model X',
-    capacity: 5,
-    driverName: 'Gianni Agnelli',
-    availability: 'Resting',
-    maintenanceStatus: 'Scheduled',
-    licensePlate: 'ROM-888-TS',
-    image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=300&auto=format&fit=crop&q=60'
   }
 ];
 
@@ -210,6 +151,8 @@ export const SEED_GUIDES: GuideProfile[] = [
   {
     id: 'G-201',
     name: 'Alexander Vance',
+    role: 'Guide',
+    phone: '+39 340 1122334',
     languages: ['English', 'German', 'French'],
     skills: ['Art History', 'Archaeology', 'Culinary Tours'],
     performanceRating: 5.0,
@@ -219,6 +162,8 @@ export const SEED_GUIDES: GuideProfile[] = [
   {
     id: 'G-202',
     name: 'Sofia Loren',
+    role: 'Guide',
+    phone: '+39 340 5566778',
     languages: ['Italian', 'English', 'Spanish'],
     skills: ['Ancient Rome', 'Wine Tasting', 'Vatican Expert'],
     performanceRating: 4.9,
@@ -228,34 +173,58 @@ export const SEED_GUIDES: GuideProfile[] = [
   {
     id: 'G-203',
     name: 'Marco Aurelio',
+    role: 'Guide',
+    phone: '+39 340 9900112',
     languages: ['Italian', 'English', 'German', 'Japanese'],
     skills: ['Colosseum Specialist', 'VIP Escort', 'Photography'],
     performanceRating: 4.8,
     availability: 'Active',
     image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=60'
+  },
+  {
+    id: 'S-301',
+    name: 'Giulia Ferrari',
+    role: 'Staff',
+    phone: '+39 351 2233445',
+    languages: ['Italian', 'English'],
+    skills: ['Front Office', 'Booking Coordination'],
+    performanceRating: 4.9,
+    availability: 'Active',
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=60'
+  },
+  {
+    id: 'S-302',
+    name: 'Luca Bianchi',
+    role: 'Staff',
+    phone: '+39 351 6677889',
+    languages: ['Italian', 'English', 'Spanish'],
+    skills: ['Dispatch', 'Ticketing', 'Logistics'],
+    performanceRating: 4.7,
+    availability: 'Active',
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60'
   }
 ];
 
 export const SEED_EXPENSES: Expense[] = [
   {
     id: 'EXP-501',
-    category: 'Fuel',
+    category: 'Guide',
     amount: 145.00,
     date: getRelativeDateString(-2),
-    description: 'Fuel fill for V-Class Tour Rome-Florence',
+    description: 'Guide fee for Colosseum private tour',
     status: 'Approved'
   },
   {
     id: 'EXP-502',
-    category: 'Catering',
+    category: 'Ticket',
     amount: 320.00,
     date: getRelativeDateString(-1),
-    description: 'Michelin-starred picnic box for VIP Colosseum Tour',
+    description: 'Skip-the-line entry tickets for Vatican group',
     status: 'Approved'
   },
   {
     id: 'EXP-503',
-    category: 'Tickets/Fees',
+    category: 'Ticket',
     amount: 680.00,
     date: getRelativeDateString(0),
     description: 'Colosseum Gladiator arena skip-the-line pre-purchased entries',
@@ -263,10 +232,18 @@ export const SEED_EXPENSES: Expense[] = [
   },
   {
     id: 'EXP-504',
-    category: 'Vehicle Repair',
+    category: 'Radio',
     amount: 1200.00,
     date: getRelativeDateString(-5),
-    description: 'Range Rover scheduled 30k service & brake pad replacement',
+    description: 'Whisper radio headset rental for large tour groups',
+    status: 'Approved'
+  },
+  {
+    id: 'EXP-505',
+    category: 'Staff Salary',
+    amount: 2400.00,
+    date: getRelativeDateString(-3),
+    description: 'Monthly salary — front office operations staff',
     status: 'Approved'
   }
 ];
@@ -319,14 +296,6 @@ export const SEED_NOTIFICATIONS: Notification[] = [
     timestamp: getRelativeDateString(0) + ' 09:15',
     category: 'Alert',
     isRead: false
-  },
-  {
-    id: 'N-303',
-    title: 'Vehicle Maintenance Overdue',
-    description: 'Range Rover Autobiography requires standard servicing.',
-    timestamp: getRelativeDateString(0) + ' 07:00',
-    category: 'System',
-    isRead: true
   }
 ];
 

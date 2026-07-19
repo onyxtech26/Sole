@@ -1,41 +1,38 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Coins, CirclePercent, ArrowUpRight, ArrowDownRight, Plus, FileText, CheckCircle2, AlertCircle, ShoppingBag, Landmark, Eye, X, Trash2, Edit } from 'lucide-react';
-import { Booking, Expense } from '../types';
+import { Booking, Expense, ExpenseCategory } from '../types';
 import { SEED_EXPENSES } from '../utils/seed';
 import { motion, AnimatePresence } from 'motion/react';
 import CustomDatePicker from './CustomDatePicker';
+import DateRangeFilter from './DateRangeFilter';
+import { DateRange, makeRange, inRange } from '../utils/dateFilter';
 import { createPortal } from 'react-dom';
 
 const EXPENSES_STORAGE_KEY = 'sole_expenses';
+
+const EXPENSE_CATEGORIES: ExpenseCategory[] = ['Guide', 'Ticket', 'Radio', 'Staff Salary', 'Other'];
 
 interface FinanceViewProps {
   bookings: Booking[];
   onUpdateBookingPaymentStatus?: (ref: string, paymentStatus: Booking['paymentStatus']) => void;
 }
 
-type FilterType = 'day' | 'month' | 'year' | 'custom';
-
 export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: FinanceViewProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  
+
   // Log/Edit Expense Modal State
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  
-  const [newCategory, setNewCategory] = useState<Expense['category']>('Fuel');
+
+  const [newCategory, setNewCategory] = useState<ExpenseCategory>('Guide');
   const [customCategory, setCustomCategory] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
   const [receiptUrl, setReceiptUrl] = useState('');
 
-  // Date Filtering State - Defaulting to Monthly filter type
-  const [filterType, setFilterType] = useState<FilterType>('month');
-  const [filterDay, setFilterDay] = useState(new Date().toISOString().split('T')[0]);
-  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString()); // YYYY
-  const [filterStart, setFilterStart] = useState(new Date().toISOString().split('T')[0]);
-  const [filterEnd, setFilterEnd] = useState(new Date().toISOString().split('T')[0]);
+  // Date-range filter (Today / Week / Month / Year), defaults to Month.
+  const [range, setRange] = useState<DateRange>(() => makeRange('month', new Date()));
 
   // Lightbox modal for receipts
   const [activeReceiptUrl, setActiveReceiptUrl] = useState<string | null>(null);
@@ -67,7 +64,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       setNewDate(editingExpense.date);
       setReceiptUrl(editingExpense.receiptUrl || '');
     } else {
-      setNewCategory('Fuel');
+      setNewCategory('Guide');
       setCustomCategory('');
       setNewAmount('');
       setNewDesc('');
@@ -85,7 +82,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
     e.preventDefault();
     if (!newAmount || !newDesc) return;
 
-    if (newCategory === 'Others' && !customCategory.trim()) {
+    if (newCategory === 'Other' && !customCategory.trim()) {
       alert("Please specify the custom category detail.");
       return;
     }
@@ -97,7 +94,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           return {
             ...ex,
             category: newCategory,
-            customCategory: newCategory === 'Others' ? customCategory.trim() : undefined,
+            customCategory: newCategory === 'Other' ? customCategory.trim() : undefined,
             amount: parseFloat(newAmount) || 0,
             date: newDate,
             description: newDesc,
@@ -113,7 +110,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       const newExp: Expense = {
         id: `EXP-${500 + expenses.length + 1}`,
         category: newCategory,
-        customCategory: newCategory === 'Others' ? customCategory.trim() : undefined,
+        customCategory: newCategory === 'Other' ? customCategory.trim() : undefined,
         amount: parseFloat(newAmount) || 0,
         date: newDate,
         description: newDesc,
@@ -138,33 +135,14 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
     setDeleteExpenseConfirmId(null);
   };
 
-  // Helper date checker
-  const isDateInFilter = (dateStr: string) => {
-    if (!dateStr) return false;
-
-    if (filterType === 'day') {
-      return dateStr === filterDay;
-    }
-    if (filterType === 'month') {
-      return dateStr.startsWith(filterMonth);
-    }
-    if (filterType === 'year') {
-      return dateStr.startsWith(filterYear);
-    }
-    if (filterType === 'custom') {
-      return dateStr >= filterStart && dateStr <= filterEnd;
-    }
-    return true;
-  };
-
   // Filtered lists
   const filteredBookings = useMemo(() => {
-    return bookings.filter(b => isDateInFilter(b.travelDate));
-  }, [bookings, filterType, filterDay, filterMonth, filterYear, filterStart, filterEnd]);
+    return bookings.filter(b => inRange(b.travelDate, range));
+  }, [bookings, range]);
 
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(e => isDateInFilter(e.date));
-  }, [expenses, filterType, filterDay, filterMonth, filterYear, filterStart, filterEnd]);
+    return expenses.filter(e => inRange(e.date, range));
+  }, [expenses, range]);
 
   // Financial calculations based on filtered lists - All expenses are considered active/approved costs
   const totalRevenue = useMemo(() => {
@@ -184,8 +162,8 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
   // Group expenses by category
   const expensesByCategory = useMemo(() => {
     return filteredExpenses.reduce((acc, curr) => {
-      const catName = curr.category === 'Others' && curr.customCategory 
-        ? `Others (${curr.customCategory})` 
+      const catName = curr.category === 'Other' && curr.customCategory
+        ? `Other (${curr.customCategory})`
         : curr.category;
       acc[catName] = (acc[catName] || 0) + curr.amount;
       return acc;
@@ -197,15 +175,15 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       {/* Welcome header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-sans">Sole Finance & Corporate Ledger</h1>
-          <p className="text-slate-500 text-sm mt-1 font-semibold">Audit tour receipts, track Michelin catering expenses, process pilot fees, and assess business margins.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-sans">Sole Finance & Corporate Ledger</h1>
+          <p className="text-slate-500 text-sm mt-1 font-semibold">Audit tour receipts, track operational expenses, process guide fees, and assess business margins.</p>
         </div>
         <button
           onClick={() => {
             setEditingExpense(null);
             setShowAddForm(true);
           }}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-3 rounded-xl text-sm flex items-center gap-2 transition duration-200 shadow-lg shadow-indigo-600/15 cursor-pointer transform hover:-translate-y-0.5"
+          className="w-full sm:w-auto justify-center bg-orange-600 hover:bg-orange-700 text-white font-bold px-5 py-3 rounded-xl text-sm flex items-center gap-2 transition duration-200 shadow-lg shadow-orange-600/15 cursor-pointer transform hover:-translate-y-0.5"
         >
           <Plus className="w-4.5 h-4.5" />
           <span>Log Expense</span>
@@ -213,61 +191,12 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       </div>
 
       {/* Date Filtering Bar */}
-      <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl shadow-black/[0.01]">
-        <div className="flex flex-wrap gap-1.5 self-stretch md:self-auto">
-          {(['day', 'month', 'year', 'custom'] as FilterType[]).map(t => (
-            <button
-              key={t}
-              onClick={() => setFilterType(t)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer active:scale-95 ${
-                filterType === t 
-                  ? 'bg-indigo-600 text-white shadow-md' 
-                  : 'bg-white/70 border border-slate-200 text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {t === 'day' ? '☀️ Daily' : t === 'month' ? '🌙 Monthly' : t === 'year' ? '⭐ Yearly' : '🔧 Custom Range'}
-            </button>
-          ))}
-        </div>
-
-        {/* Dynamic pickers depending on selected filter - Using custom Date Picker */}
-        <div className="flex items-center gap-2 w-full md:w-auto min-w-[200px]">
-          <AnimatePresence mode="wait">
-            {filterType === 'day' && (
-              <motion.div key="day" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex items-center gap-2 w-full md:w-auto">
-                <span className="text-xs text-slate-400 font-bold shrink-0">Select Day:</span>
-                <CustomDatePicker value={filterDay} onChange={setFilterDay} type="date" />
-              </motion.div>
-            )}
-
-            {filterType === 'month' && (
-              <motion.div key="month" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex items-center gap-2 w-full md:w-auto">
-                <span className="text-xs text-slate-400 font-bold shrink-0">Select Month:</span>
-                <CustomDatePicker value={filterMonth} onChange={setFilterMonth} type="month" />
-              </motion.div>
-            )}
-
-            {filterType === 'year' && (
-              <motion.div key="year" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex items-center gap-2 w-full md:w-auto">
-                <span className="text-xs text-slate-400 font-bold shrink-0">Select Year:</span>
-                <CustomDatePicker value={filterYear} onChange={setFilterYear} type="year" />
-              </motion.div>
-            )}
-
-            {filterType === 'custom' && (
-              <motion.div key="custom" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex items-center gap-2 flex-wrap w-full md:w-auto">
-                <span className="text-xs text-slate-400 font-bold shrink-0">Start:</span>
-                <CustomDatePicker value={filterStart} onChange={setFilterStart} type="date" className="max-w-[140px]" />
-                <span className="text-xs text-slate-400 font-bold shrink-0 ml-1">End:</span>
-                <CustomDatePicker value={filterEnd} onChange={setFilterEnd} type="date" className="max-w-[140px]" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+      <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-4 sm:p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+        <DateRangeFilter onChange={setRange} />
       </div>
 
       {/* Finance Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Gross Revenue</span>
           <div className="flex justify-between items-end mt-2">
@@ -298,8 +227,8 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Net Profit Margin</span>
           <div className="flex justify-between items-end mt-2">
-            <h3 className="text-2xl font-black text-indigo-600">{marginPercentage.toFixed(1)}%</h3>
-            <CirclePercent className="w-5 h-5 text-indigo-600" />
+            <h3 className="text-2xl font-black text-orange-600">{marginPercentage.toFixed(1)}%</h3>
+            <CirclePercent className="w-5 h-5 text-orange-600" />
           </div>
           <span className="text-[10px] text-slate-400 block mt-2 font-semibold">High yield luxury service model</span>
         </div>
@@ -324,7 +253,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                       <span className="font-extrabold text-slate-800 shrink-0">€{amountNum.toFixed(2)} ({pct.toFixed(0)}%)</span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-gradient-to-r from-indigo-600 to-emerald-500 h-full rounded-full" style={{ width: `${pct}%` }} />
+                      <div className="bg-gradient-to-r from-[#0b1220] to-orange-500 h-full rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 );
@@ -361,10 +290,10 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                   filteredExpenses.map(ex => {
                     return (
                       <tr key={ex.id} className="hover:bg-slate-50/50 transition">
-                        <td className="py-3 font-mono font-bold text-indigo-600">{ex.id}</td>
+                        <td className="py-3 font-mono font-bold text-orange-600">{ex.id}</td>
                         <td className="py-3 font-bold text-slate-800">
-                          {ex.category === 'Others' && ex.customCategory 
-                            ? `Others: ${ex.customCategory}` 
+                          {ex.category === 'Other' && ex.customCategory
+                            ? `Other: ${ex.customCategory}`
                             : ex.category}
                         </td>
                         <td className="py-3 text-slate-500 font-semibold">{ex.date}</td>
@@ -374,7 +303,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                           {ex.receiptUrl ? (
                             <button
                               onClick={() => setActiveReceiptUrl(ex.receiptUrl || null)}
-                              className="p-1.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-600 hover:bg-indigo-100 transition cursor-pointer"
+                              className="p-1.5 rounded bg-orange-50 border border-orange-100 text-orange-600 hover:bg-orange-100 transition cursor-pointer"
                               title="View Attached Invoice/Receipt"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -391,7 +320,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                                 setShowAddForm(true);
                               }}
                               title="Edit Expense"
-                              className="p-1.5 rounded bg-slate-50 border border-slate-200 text-slate-500 hover:text-indigo-650 hover:bg-indigo-50 hover:border-indigo-100 transition cursor-pointer"
+                              className="p-1.5 rounded bg-slate-50 border border-slate-200 text-slate-500 hover:text-orange-650 hover:bg-orange-50 hover:border-orange-100 transition cursor-pointer"
                             >
                               <Edit className="w-3.5 h-3.5" />
                             </button>
@@ -432,7 +361,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
             <tbody className="divide-y divide-slate-100">
               {filteredBookings.filter(b => b.status !== 'Cancelled').map(b => (
                 <tr key={b.bookingRef} className="hover:bg-slate-50/50 transition">
-                  <td className="py-3.5 font-mono font-bold text-indigo-600">{b.bookingRef}</td>
+                  <td className="py-3.5 font-mono font-bold text-orange-600">{b.bookingRef}</td>
                   <td className="py-3.5 font-extrabold text-slate-800">{b.leadTraveler}</td>
                   <td className="py-3.5 text-slate-600 font-semibold truncate max-w-xs">{b.tourName}</td>
                   <td className="py-3.5 text-slate-500 font-semibold">{b.travelDate}</td>
@@ -440,7 +369,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                   <td className="py-3.5 text-center">
                     <span className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider border ${
                       b.paymentStatus === 'Paid' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' :
-                      b.paymentStatus === 'Partially Paid' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' :
+                      b.paymentStatus === 'Partially Paid' ? 'bg-orange-50 border-orange-200 text-orange-600' :
                       'bg-rose-50 border-rose-200 text-rose-600'
                     }`}>
                       {b.paymentStatus || 'Unpaid'}
@@ -498,20 +427,16 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Category</label>
                     <select
                       value={newCategory}
-                      onChange={e => setNewCategory(e.target.value as Expense['category'])}
-                      className="bg-slate-55 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                      onChange={e => setNewCategory(e.target.value as ExpenseCategory)}
+                      className="bg-slate-55 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-orange-500"
                     >
-                      <option value="Fuel">Fuel</option>
-                      <option value="Catering">Catering</option>
-                      <option value="Tickets/Fees">Tickets/Fees</option>
-                      <option value="Guide Fees">Guide Fees</option>
-                      <option value="Vehicle Repair">Vehicle Repair</option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="Others">Others</option>
+                      {EXPENSE_CATEGORIES.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
                     </select>
                   </div>
 
-                  {newCategory === 'Others' && (
+                  {newCategory === 'Other' && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }} 
                       animate={{ opacity: 1, height: 'auto' }} 
@@ -525,7 +450,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                         placeholder="Specify expense type detail..."
                         value={customCategory}
                         onChange={e => setCustomCategory(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 outline-none focus:border-indigo-500 focus:bg-white"
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500 focus:bg-white"
                       />
                     </motion.div>
                   )}
@@ -540,7 +465,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                         value={newAmount}
                         onChange={e => setNewAmount(e.target.value)}
                         placeholder="250.00"
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 outline-none focus:border-indigo-500 focus:bg-white"
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500 focus:bg-white"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -557,7 +482,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                       value={newDesc}
                       onChange={e => setNewDesc(e.target.value)}
                       placeholder="e.g. Mercedes V-Class fuel refill"
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-indigo-500 focus:bg-white"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500 focus:bg-white"
                     />
                   </div>
 
@@ -568,7 +493,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                       value={receiptUrl}
                       onChange={e => setReceiptUrl(e.target.value)}
                       placeholder="https://images.unsplash.com/... or upload"
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-indigo-500 focus:bg-white"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500 focus:bg-white"
                     />
                   </div>
 
@@ -585,7 +510,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                     </button>
                     <button
                       type="submit"
-                      className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 shadow-md cursor-pointer active:scale-95 transition"
+                      className="bg-orange-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-orange-700 shadow-md cursor-pointer active:scale-95 transition"
                     >
                       {editingExpense ? 'Save Changes' : 'Log Expense'}
                     </button>

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Calendar, Users, CheckCircle, Coins, ArrowRight, Upload, Info } from 'lucide-react';
 import { Booking, User } from '../types';
 import { getRelativeDateString } from '../utils/seed';
+import { DateRange, makeRange, inRange } from '../utils/dateFilter';
+import DateRangeFilter from './DateRangeFilter';
 import RollingNumber from './RollingNumber';
 
 interface DashboardViewProps {
@@ -14,30 +16,25 @@ interface DashboardViewProps {
 export default function DashboardView({ bookings, currentUser, onAddBookings, onNavigate }: DashboardViewProps) {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  // Date-range filter driving the KPI cards (defaults to Today).
+  const [range, setRange] = useState<DateRange>(() => makeRange('today', new Date()));
 
-  const todayStr = getRelativeDateString(0);
-  
-  // Active bookings (Confirmed or Pending, not Cancelled)
-  const activeBookings = bookings.filter(b => b.status !== 'Cancelled');
-  
-  // Today's Bookings
-  const todayBookings = bookings.filter(b => b.travelDate === todayStr);
-  const todayBookingsCount = todayBookings.length;
+  // Bookings within the selected range
+  const rangeBookings = bookings.filter(b => inRange(b.travelDate, range));
+  const rangeBookingsCount = rangeBookings.length;
 
-  // Today's Travelers
-  const todayTravelers = todayBookings.reduce((sum, b) => sum + (b.paxCount.adults + b.paxCount.children), 0);
+  // Travelers within the selected range
+  const rangeTravelers = rangeBookings.reduce((sum, b) => sum + (b.paxCount.adults + b.paxCount.children), 0);
 
-  // This Month Completed/Active Bookings
-  const thisMonth = new Date().getMonth();
-  const thisYear = new Date().getFullYear();
-  const monthlyBookings = bookings.filter(b => {
-    const bd = new Date(b.travelDate);
-    return bd.getMonth() === thisMonth && bd.getFullYear() === thisYear && b.status !== 'Cancelled';
-  });
-  const monthlyBookingsCount = monthlyBookings.length;
+  // Completed bookings for the selected day/range (Confirmed & travel date passed or today)
+  const rangeCompleted = rangeBookings.filter(b => b.status === 'Confirmed');
+  const rangeCompletedCount = rangeCompleted.length;
 
-  // Active Revenue
-  const totalRevenue = activeBookings.reduce((sum, b) => sum + b.amount, 0);
+  // Label describing the active range for card subtitles
+  const rangeNoun = range.mode === 'today' ? "the day" : range.mode === 'week' ? "the week" : range.mode === 'month' ? "the month" : "the year";
+
+  // Active Revenue (within range)
+  const totalRevenue = rangeBookings.filter(b => b.status !== 'Cancelled').reduce((sum, b) => sum + b.amount, 0);
 
   // Sorted list of 4 most recent bookings (by booking reference code)
   const sortedRecent = [...bookings]
@@ -129,11 +126,9 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
           status: (getVal('status') as 'Confirmed' | 'Pending' | 'Cancelled') || 'Confirmed',
           paymentStatus: 'Paid',
           assignedGuide: getVal('guide') || '',
-          assignedVehicle: 'None',
           assignedDriver: 'None',
           okStatus: getVal('status') === 'Confirmed',
-          checkedInGuests: [],
-          vehicleStatus: 'not_started'
+          checkedInGuests: []
         };
 
         importedList.push(newRecord);
@@ -158,77 +153,78 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in">
       {/* Welcome header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-end">
         <div>
-          <h1 className="text-3xl font-extrabold text-theme-text tracking-tight font-sans">Operational Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-theme-text tracking-tight font-sans">Operational Dashboard</h1>
           <p className="text-theme-muted text-sm mt-1">Real-time booking intelligence and daily manifest controls.</p>
         </div>
+        <DateRangeFilter onChange={setRange} className="lg:items-end" />
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-600 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#0b1220] to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex justify-between items-start">
             <div className="space-y-1">
-              <p className="text-xs font-bold uppercase tracking-wider text-theme-muted">Today's Tours</p>
-              <h2 className="text-3xl font-black text-theme-text">
-                <RollingNumber value={todayBookingsCount} />
+              <p className="text-xs font-bold uppercase tracking-wider text-theme-muted">Tours</p>
+              <h2 className="text-2xl sm:text-3xl font-black text-theme-text">
+                <RollingNumber value={rangeBookingsCount} />
               </h2>
-              <p className="text-xs text-theme-muted">scheduled departures</p>
+              <p className="text-xs text-theme-muted">scheduled for {rangeNoun}</p>
             </div>
-            <div className="p-2 rounded-lg bg-gradient-to-tr from-indigo-600 to-emerald-500 text-white shadow-sm border border-white/20 shrink-0 self-start">
+            <div className="p-2 rounded-lg bg-gradient-to-tr from-[#0b1220] to-orange-500 text-white shadow-sm border border-white/20 shrink-0 self-start">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
         </div>
 
-        <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-600 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#0b1220] to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex justify-between items-start">
             <div className="space-y-1">
-              <p className="text-xs font-bold uppercase tracking-wider text-theme-muted">Today's Travelers</p>
-              <h2 className="text-3xl font-black text-theme-text">
-                <RollingNumber value={todayTravelers} />
+              <p className="text-xs font-bold uppercase tracking-wider text-theme-muted">Travelers</p>
+              <h2 className="text-2xl sm:text-3xl font-black text-theme-text">
+                <RollingNumber value={rangeTravelers} />
               </h2>
-              <p className="text-xs text-theme-muted">active tour PAX</p>
+              <p className="text-xs text-theme-muted">total tour PAX</p>
             </div>
-            <div className="p-2 rounded-lg bg-gradient-to-tr from-indigo-600 to-emerald-500 text-white shadow-sm border border-white/20 shrink-0 self-start">
+            <div className="p-2 rounded-lg bg-gradient-to-tr from-[#0b1220] to-orange-500 text-white shadow-sm border border-white/20 shrink-0 self-start">
               <Users className="w-4 h-4" />
             </div>
           </div>
         </div>
 
-        <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-600 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#0b1220] to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex justify-between items-start">
             <div className="space-y-1">
-              <p className="text-xs font-bold uppercase tracking-wider text-theme-muted">This Month</p>
-              <h2 className="text-3xl font-black text-theme-text">
-                <RollingNumber value={monthlyBookingsCount} />
+              <p className="text-xs font-bold uppercase tracking-wider text-theme-muted">Completed</p>
+              <h2 className="text-2xl sm:text-3xl font-black text-theme-text">
+                <RollingNumber value={rangeCompletedCount} />
               </h2>
-              <p className="text-xs text-theme-muted">bookings completed</p>
+              <p className="text-xs text-theme-muted">bookings for {rangeNoun}</p>
             </div>
-            <div className="p-2 rounded-lg bg-gradient-to-tr from-indigo-600 to-emerald-500 text-white shadow-sm border border-white/20 shrink-0 self-start">
+            <div className="p-2 rounded-lg bg-gradient-to-tr from-[#0b1220] to-orange-500 text-white shadow-sm border border-white/20 shrink-0 self-start">
               <CheckCircle className="w-4 h-4" />
             </div>
           </div>
         </div>
 
         {currentUser.role !== 'staff' && (
-          <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-600 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#0b1220] to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-theme-muted">Active Revenue</p>
-                <h2 className="text-3xl font-black text-theme-text">
+                <p className="text-xs font-bold uppercase tracking-wider text-theme-muted">Revenue</p>
+                <h2 className="text-2xl sm:text-3xl font-black text-theme-text">
                   <RollingNumber value={totalRevenue} isCurrency={true} />
                 </h2>
-                <p className="text-xs text-theme-muted">from confirmed bookings</p>
+                <p className="text-xs text-theme-muted">for {rangeNoun}</p>
               </div>
-              <div className="p-2 rounded-lg bg-gradient-to-tr from-indigo-600 to-emerald-500 text-white shadow-sm border border-white/20 shrink-0 self-start">
+              <div className="p-2 rounded-lg bg-gradient-to-tr from-[#0b1220] to-orange-500 text-white shadow-sm border border-white/20 shrink-0 self-start">
                 <Coins className="w-4 h-4" />
               </div>
             </div>
@@ -260,7 +256,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
                     <h4 className="text-sm font-bold text-theme-text truncate">{b.leadTraveler}</h4>
                     <p className="text-xs text-theme-muted truncate max-w-md mt-0.5">{b.tourName}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="font-mono text-[10px] text-indigo-600 font-bold">{b.bookingRef}</span>
+                      <span className="font-mono text-[10px] text-orange-600 font-bold">{b.bookingRef}</span>
                       <span className="text-[10px] text-theme-muted/50">•</span>
                       <span className="text-[10px] text-theme-muted font-medium">{b.travelDate}</span>
                     </div>
@@ -271,7 +267,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
                     )}
                     <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
                       b.status === 'Confirmed' ? 'bg-emerald-600 border-transparent text-white' :
-                      b.status === 'Pending' ? 'bg-indigo-600 border-transparent text-white' :
+                      b.status === 'Pending' ? 'bg-orange-600 border-transparent text-white' :
                       'bg-rose-500 border-transparent text-white'
                     }`}>
                       {b.status}
@@ -315,7 +311,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
                       cy="18"
                       r="15.915"
                       fill="none"
-                      stroke="#4f46e5"
+                      stroke="#f59e0b"
                       strokeWidth="3.2"
                       strokeDasharray={`${pendingPct} ${100 - pendingPct}`}
                       strokeDashoffset={`-${activePct}`}
@@ -355,7 +351,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
 
               <div className="flex items-center justify-between text-xs text-theme-muted font-semibold">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#4f46e5]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                   <span>Pending</span>
                 </div>
                 <span className="font-bold text-theme-text">{pendingCount}</span>
@@ -402,7 +398,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
                 </div>
                 <button
                   onClick={handleImportCSV}
-                  className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-indigo-600/10 transition shrink-0 text-sm"
+                  className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-orange-600/10 transition shrink-0 text-sm"
                 >
                   Process & Import
                 </button>
@@ -421,7 +417,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
             </div>
 
             <details className="md:col-span-2 group border border-theme-border bg-white/40 rounded-2xl p-4 cursor-pointer outline-none select-none">
-              <summary className="text-sm font-bold text-indigo-600 flex items-center justify-between">
+              <summary className="text-sm font-bold text-orange-600 flex items-center justify-between">
                 <span>View Sample CSV Format</span>
                 <span className="text-theme-muted group-open:rotate-180 transition-transform duration-200">▼</span>
               </summary>

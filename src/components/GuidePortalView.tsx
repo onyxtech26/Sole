@@ -42,9 +42,9 @@ export default function GuidePortalView({
       {/* Header bar */}
       <div className="flex justify-between items-center bg-white/40 border border-slate-200/80 p-5 rounded-3xl backdrop-blur-3xl shadow-xl shadow-black/[0.01]">
         <div>
-          <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest block font-sans">Guide Manifest Portal</span>
+          <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest block font-sans">Guide Manifest Portal</span>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-1 font-sans">My Tour Schedule</h1>
-          <p className="text-slate-500 text-xs font-semibold mt-1">Hello, <span className="font-bold text-indigo-600">{currentUser.username}</span></p>
+          <p className="text-slate-500 text-xs font-semibold mt-1">Hello, <span className="font-bold text-orange-600">{currentUser.username}</span></p>
         </div>
         <button
           onClick={onLogout}
@@ -63,7 +63,7 @@ export default function GuidePortalView({
             type="date"
             value={guideDate}
             onChange={(e) => setGuideDate(e.target.value)}
-            className="w-full bg-white/50 border border-slate-200/80 rounded-xl pl-11 pr-4 py-3.5 text-slate-800 text-sm font-semibold outline-none transition duration-300 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+            className="w-full bg-white/50 border border-slate-200/80 rounded-xl pl-11 pr-4 py-3.5 text-slate-800 text-sm font-semibold outline-none transition duration-300 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
           />
           <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
         </div>
@@ -87,15 +87,15 @@ export default function GuidePortalView({
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 leading-tight font-sans">{b.tourName}</h3>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <span className="text-[10px] font-mono text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                    <span className="text-[10px] font-mono text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-lg border border-orange-100">
                       Ref: {b.bookingRef}
                     </span>
                     <span className="text-[10px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 border border-slate-100">
-                      <Globe className="w-3 h-3 text-indigo-500" /> Language: {b.language}
+                      <Globe className="w-3 h-3 text-orange-500" /> Language: {b.language}
                     </span>
                   </div>
                 </div>
-                <span className="bg-gradient-to-tr from-indigo-600 to-emerald-500 text-white font-bold px-3 py-1 rounded-xl text-xs shrink-0 font-mono shadow-md shadow-indigo-600/10 border border-white/20">
+                <span className="bg-gradient-to-tr from-[#0b1220] to-orange-500 text-white font-bold px-3 py-1 rounded-xl text-xs shrink-0 font-mono shadow-md shadow-orange-500/10 border border-white/20">
                   {b.tourTime}
                 </span>
               </div>
@@ -103,7 +103,7 @@ export default function GuidePortalView({
               {/* Tour card contact details */}
               <div className="text-xs text-slate-600 space-y-2 font-semibold">
                 <div className="flex gap-2 items-start">
-                  <MapPin className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
                   <span><strong>Meeting Point:</strong> <span className="text-slate-800">{b.meetingPoint || 'Standard location'}</span></span>
                 </div>
                 <div className="flex gap-2 items-start">
