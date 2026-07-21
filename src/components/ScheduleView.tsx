@@ -612,7 +612,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
   return (
     <div className="space-y-6 animate-fade-in relative z-10">
       {/* Top operational bar */}
-      <div className="flex flex-col gap-4 bg-white/40 border border-slate-200/80 p-4 sm:p-5 rounded-2xl backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+      <div className="flex flex-col gap-4 bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-md">
         <div className="flex flex-col lg:flex-row gap-4 lg:items-start lg:justify-between">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-sans">Group Dispatch Board</h1>
@@ -717,7 +717,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
         <div 
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, null)}
-          className="lg:col-span-1 bg-white/40 backdrop-blur-xl border border-dashed border-slate-300 rounded-2xl p-5 shadow-xl shadow-black/[0.01]"
+          className="lg:col-span-1 bg-white border border-dashed border-slate-300 rounded-2xl p-5 shadow-md"
         >
           <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200/60">
             <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
@@ -775,10 +775,10 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
             </button>
           </div>
 
-          {/* Horizontal scrolling group columns */}
-          <div className="flex gap-5 overflow-x-auto pb-3 -mx-1 px-1 snap-x">
+          {/* Group Dispatch Grid (Horizontal max 3 columns, wrapping continuously below) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {dayGroups.length === 0 && (
-              <div className="w-full py-12 text-center text-xs text-slate-400 font-semibold border-2 border-dashed border-slate-200 rounded-2xl">
+              <div className="col-span-full py-12 text-center text-xs text-slate-400 font-semibold border-2 border-dashed border-slate-200 rounded-2xl">
                 No groups yet for this scope. Click "New Group" to start dispatching.
               </div>
             )}
@@ -792,7 +792,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                   key={group.id}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, group.id)}
-                  className={`bg-white/50 border rounded-2xl p-4 flex flex-col shadow-sm transition-all duration-300 hover:shadow-md w-[300px] shrink-0 snap-start ${
+                  className={`bg-white border rounded-2xl p-4 flex flex-col shadow-md transition-all duration-300 hover:shadow-lg w-full ${
                     isOver ? 'border-rose-300 ring-2 ring-rose-500/10' :
                     isFull ? 'border-orange-400' : 'border-slate-200'
                   }`}
@@ -876,7 +876,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
         <AnimatePresence>
           {editingGroup && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setEditingGroup(null)}
             >
               <motion.div 
@@ -1027,7 +1027,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
         <AnimatePresence>
           {whatsappComposer && (
             <div 
-              className="fixed inset-0 bg-slate-955/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setWhatsappComposer(null)}
             >
               <motion.div 
@@ -1177,7 +1177,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
         <AnimatePresence>
           {showAutoGroupConfirm && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setShowAutoGroupConfirm(false)}
             >
               <motion.div 

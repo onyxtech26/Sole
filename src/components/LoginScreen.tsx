@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Eye, EyeOff, ShieldAlert } from 'lucide-react';
+import { Eye, EyeOff, ShieldAlert, Sparkles, ArrowRight, Lock, User as UserIcon, ExternalLink } from 'lucide-react';
 import { User } from '../types';
 
 interface LoginScreenProps {
@@ -27,62 +27,100 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       setError('');
       onLogin({ username: 'Guide User', role: 'guide' });
     } else {
-      setError("❌ Incorrect username or password. Try admin/admin, staff/staff, or guide/guide");
+      setError("Incorrect username or password. Use demo credentials below.");
     }
   };
 
+  const handleDemoLogin = (roleUser: string, rolePass: string) => {
+    setUsername(roleUser);
+    setPassword(rolePass);
+    setError('');
+    
+    if (roleUser === 'admin') onLogin({ username: 'Admin', role: 'manager' });
+    else if (roleUser === 'staff') onLogin({ username: 'Staff User', role: 'staff' });
+    else if (roleUser === 'guide') onLogin({ username: 'Guide User', role: 'guide' });
+  };
+
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#f8fafc] flex items-center justify-center z-50 p-4 overflow-hidden font-sans">
+    <div className="fixed inset-0 w-screen h-screen login-animated-bg flex items-center justify-center z-50 p-4 overflow-hidden font-sans select-none">
       
-      {/* Splash Screen Style Ambient Gradient Blobs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-20">
-        <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[90px] animate-blob-float-1" />
-        <div className="absolute bottom-[15%] right-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[90px] animate-blob-float-2" />
+      {/* Animated Glowing Light Orbs & Mesh Overlays */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-orange-500/30 to-amber-300/20 blur-[130px] animate-blob-float-1" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-indigo-600/30 via-purple-600/20 to-orange-500/20 blur-[140px] animate-blob-float-2" />
+        <div className="absolute top-[40%] right-[20%] w-[350px] h-[350px] rounded-full bg-gradient-to-r from-amber-500/20 to-rose-500/20 blur-[110px] animate-blob-float-3" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.3)_100%)]" />
       </div>
 
+      {/* Main Solid White Login Card */}
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        initial={{ opacity: 0, y: 40, scale: 0.94 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: "spring", stiffness: 80, damping: 15 }}
-        className="relative z-10 bg-white/70 backdrop-blur-3xl border border-orange-500/20 rounded-[2.25rem] w-full max-w-md p-8 md:p-10 shadow-[0_0_35px_rgba(253,151,7,0.25),0_10px_30px_rgba(253,151,7,0.15),0_20px_50px_rgba(0,0,0,0.04)]"
+        transition={{ type: "spring", stiffness: 70, damping: 18 }}
+        className="relative z-10 bg-white border border-slate-200/90 rounded-[2.5rem] w-full max-w-md p-8 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.2),0_0_35px_rgba(253,151,7,0.15)] overflow-hidden flex flex-col"
       >
+        {/* Brand & Header Section */}
         <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="w-16 h-16 rounded-2xl bg-[#0b1220] border border-slate-100 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#0b1220]/20"
+          >
+            <img
+              src="/logo-mark.png"
+              alt="SOLE"
+              className="w-8 h-8 object-contain"
+            />
+          </motion.div>
           <img
             src="/logo.png"
             alt="SOLE"
-            className="h-14 w-auto mx-auto mb-4 drop-shadow-sm"
+            className="h-8 w-auto mx-auto mb-2"
           />
-          <p className="text-slate-500 text-xs font-bold tracking-widest uppercase mt-1">Operations Portal Login</p>
+          <p className="text-slate-500 text-[11px] font-extrabold tracking-[0.2em] uppercase">
+            Smart Operations & Logistics Engine
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-600 tracking-wider uppercase block">Username</label>
-            <input
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username"
-              className="w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3.5 text-slate-800 text-sm outline-none transition duration-300 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 placeholder-slate-400"
-            />
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 tracking-wider uppercase flex items-center gap-1.5">
+              <UserIcon className="w-3.5 h-3.5 text-orange-500" />
+              Username
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
+                className="w-full bg-slate-50 border border-slate-200/90 rounded-2xl px-4 py-3.5 text-slate-900 text-sm outline-none transition duration-300 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 placeholder-slate-400 font-semibold"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-600 tracking-wider uppercase block">Password</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 tracking-wider uppercase flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-orange-500" />
+              Password
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3.5 pr-10 text-slate-800 text-sm outline-none transition duration-300 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 placeholder-slate-400"
+                placeholder="Enter your password"
+                className="w-full bg-slate-50 border border-slate-200/90 rounded-2xl px-4 py-3.5 pr-11 text-slate-900 text-sm outline-none transition duration-300 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 placeholder-slate-400 font-semibold"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#fd9707] transition duration-200"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-600 transition duration-200 p-1 cursor-pointer"
+                aria-label="Toggle password visibility"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -91,41 +129,83 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
           {error && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-2 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl p-3 text-xs font-bold"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-3.5 text-xs font-bold"
             >
-              <ShieldAlert className="w-4 h-4 shrink-0 text-rose-500" />
+              <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{error}</span>
             </motion.div>
           )}
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="submit"
-            className="w-full bg-[#0b1220] hover:bg-[#161f33] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-500/10 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 text-sm cursor-pointer"
+            className="w-full bg-[#0b1220] hover:bg-[#161f33] text-white font-black py-4 rounded-2xl shadow-xl shadow-[#0b1220]/20 transition-all duration-300 text-sm flex items-center justify-center gap-2 cursor-pointer mt-2"
           >
-            Sign In
-          </button>
+            <span>Sign In to Dashboard</span>
+            <ArrowRight className="w-4 h-4" />
+          </motion.button>
         </form>
 
-        <div className="mt-6 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl text-[11px] text-slate-500 space-y-2">
-          <p className="font-bold text-slate-600 uppercase tracking-wider">Demo Accounts</p>
-          <div className="grid grid-cols-3 gap-2 text-center font-mono">
-            <div className="bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
-              <span className="font-bold block text-slate-700">Admin</span>
-              admin / admin
-            </div>
-            <div className="bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
-              <span className="font-bold block text-slate-700">Staff</span>
-              staff / staff
-            </div>
-            <div className="bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
-              <span className="font-bold block text-slate-700">Guide</span>
-              guide / guide
-            </div>
+        {/* Demo Credentials Quick Switcher */}
+        <div className="mt-6 pt-5 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-orange-500" /> Demo Quick Access
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono">Click to autofill</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => handleDemoLogin('admin', 'admin')}
+              className="bg-slate-50 hover:bg-orange-50/80 border border-slate-200/80 hover:border-orange-300 rounded-xl p-2.5 text-left transition duration-200 group cursor-pointer"
+            >
+              <span className="text-xs font-extrabold text-slate-800 group-hover:text-orange-600 block">Admin</span>
+              <span className="text-[10px] text-slate-400 font-mono block">admin</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleDemoLogin('staff', 'staff')}
+              className="bg-slate-50 hover:bg-orange-50/80 border border-slate-200/80 hover:border-orange-300 rounded-xl p-2.5 text-left transition duration-200 group cursor-pointer"
+            >
+              <span className="text-xs font-extrabold text-slate-800 group-hover:text-orange-600 block">Staff</span>
+              <span className="text-[10px] text-slate-400 font-mono block">staff</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleDemoLogin('guide', 'guide')}
+              className="bg-slate-50 hover:bg-orange-50/80 border border-slate-200/80 hover:border-orange-300 rounded-xl p-2.5 text-left transition duration-200 group cursor-pointer"
+            >
+              <span className="text-xs font-extrabold text-slate-800 group-hover:text-orange-600 block">Guide</span>
+              <span className="text-[10px] text-slate-400 font-mono block">guide</span>
+            </button>
           </div>
         </div>
+
+        {/* Powered By Footer Link */}
+        <div className="mt-5 text-center border-t border-slate-100 pt-3.5">
+          <p className="text-[11px] text-slate-500 font-bold tracking-wide">
+            Powered By{' '}
+            <a
+              href="https://onyxx-tech.vercel.app/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-orange-600 hover:text-orange-700 font-black hover:underline transition inline-flex items-center gap-1"
+            >
+              <span>Onyxx Tech Hub</span>
+              <ExternalLink className="w-3 h-3 shrink-0" />
+            </a>
+          </p>
+        </div>
+
       </motion.div>
     </div>
   );
 }
+

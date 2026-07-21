@@ -132,7 +132,7 @@ export default function BookingsView({
       </div>
 
       {/* Query controls & Filters */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/40 border border-slate-200/80 p-5 rounded-2xl backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05, ease: [0.16, 1, 0.3, 1] }} className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white border border-slate-200 p-5 rounded-2xl shadow-md">
         <div className="relative w-full md:max-w-xs">
           <input
             type="text"
@@ -167,7 +167,7 @@ export default function BookingsView({
             <option value="Cancelled" className="text-slate-800 bg-white font-semibold">Cancelled</option>
           </select>
         </div>
-      </div>
+      </motion.div>
 
       {/* Date Range Tabs */}
       <div className="flex gap-1 border-b border-slate-200">
@@ -201,7 +201,7 @@ export default function BookingsView({
       </div>
 
       {/* Bookings Table Container */}
-      <div className="bg-white/40 border border-slate-200/80 rounded-2xl overflow-hidden backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1, ease: [0.16, 1, 0.3, 1] }} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-md">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
@@ -386,13 +386,13 @@ export default function BookingsView({
             </tbody>
           </table>
         </div>
-      </div>
+      </motion.div>
       {/* ─── Add/Edit Booking Modal (Fills entire screen, beautiful glassmorphism blur) ─── */}
       {createPortal(
         <AnimatePresence>
           {showFormModal && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => {
                 setShowFormModal(false);
                 setEditingRef(null);
@@ -453,7 +453,7 @@ export default function BookingsView({
         <AnimatePresence>
           {deleteConfirmRef && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteConfirmRef(null)}
             >
               <motion.div 

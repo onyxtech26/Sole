@@ -139,7 +139,7 @@ export default function CustomersView() {
       {/* CRM Main Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-180px)] lg:h-[calc(100vh-200px)] min-h-[500px] overflow-hidden">
         {/* Left: Customer Directory List */}
-        <div className="lg:col-span-1 bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl flex flex-col h-full shadow-xl shadow-black/[0.01] overflow-hidden">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05, ease: [0.16, 1, 0.3, 1] }} className="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-5 flex flex-col h-full shadow-md overflow-hidden">
           <div className="relative mb-4">
             <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
             <input
@@ -192,10 +192,10 @@ export default function CustomersView() {
               })
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Right: Client Profile Ledger Sheet */}
-        <div className="lg:col-span-2 bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl h-full overflow-y-auto shadow-xl shadow-black/[0.01]">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1, ease: [0.16, 1, 0.3, 1] }} className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 h-full overflow-y-auto shadow-md">
           <AnimatePresence mode="wait">
             {selectedCustomer ? (
               <motion.div
@@ -352,13 +352,13 @@ export default function CustomersView() {
               <p className="text-slate-400 text-sm py-16 text-center font-semibold">No luxury traveler selected.</p>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
       </div>      {/* ─── Onboard Client Modal (Overlay click-to-close & smooth animate) ─── */}
       {createPortal(
         <AnimatePresence>
           {showAddForm && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setShowAddForm(false)}
             >
               <motion.div 
@@ -482,7 +482,7 @@ export default function CustomersView() {
         <AnimatePresence>
           {deleteConfirmId && (
             <div 
-              className="fixed inset-0 bg-slate-955/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteConfirmId(null)}
             >
               <motion.div 

@@ -309,15 +309,28 @@ export default function App() {
     );
   }
 
-  // If not logged in, force Login Screen Overlay
-  if (!currentUser) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
-
-
-
   return (
-    <div className={`relative flex h-screen w-screen overflow-hidden bg-theme-bg text-theme-text font-style-${activeFont} transition-all duration-300`}>
+    <AnimatePresence mode="wait">
+      {!currentUser ? (
+        <motion.div
+          key="login-screen"
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.03, filter: "blur(6px)" }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="fixed inset-0 w-screen h-screen z-50"
+        >
+          <LoginScreen onLogin={handleLogin} />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="main-app"
+          initial={{ opacity: 0, scale: 0.98, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.98, y: -10 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className={`relative flex h-screen w-screen overflow-hidden bg-theme-bg text-theme-text font-style-${activeFont} transition-all duration-300`}
+        >
       {/* Abstract floating background circles like the splash screen */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-10">
         <div className="absolute top-[10%] left-[10%] w-[450px] h-[450px] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[110px] animate-blob-float-1" />
@@ -337,7 +350,7 @@ export default function App() {
           <div className="w-8 h-8 rounded-lg bg-[#0b1220] flex items-center justify-center shrink-0">
             <img src="/logo-mark.png" alt="SOLE" className="w-4.5 h-4.5 object-contain" />
           </div>
-          <span className="text-sm font-black text-theme-text tracking-wide">Sole</span>
+          <span className="text-sm font-black text-theme-text tracking-wide">SOLE</span>
         </div>
         <div className="w-10" />
       </div>
@@ -372,7 +385,7 @@ export default function App() {
             <img src="/logo-mark.png" alt="SOLE" className="w-5.5 h-5.5 object-contain brightness-0 invert" />
           </div>
           <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${isSidebarExpanded ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0'}`}>
-            <h2 className="text-base font-black text-white tracking-wide leading-none">Sole</h2>
+            <h2 className="text-base font-black text-white tracking-wide leading-none">SOLE</h2>
             <span className="text-[9px] font-bold tracking-widest text-orange-200 uppercase mt-1 block">Operations Engine</span>
           </div>
         </div>
@@ -565,10 +578,10 @@ export default function App() {
         <AnimatePresence mode="wait">
           <motion.div
             key={activeView}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: 20, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -15, scale: 0.99 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="flex-grow flex flex-col"
           >
             {activeView === 'dashboard' && isViewAllowed(currentUser.role, 'dashboard') && (
@@ -647,7 +660,7 @@ export default function App() {
         <AnimatePresence>
           {showLogoutConfirm && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setShowLogoutConfirm(false)}
             >
               <motion.div 
@@ -690,6 +703,8 @@ export default function App() {
         </AnimatePresence>,
         document.body
       )}
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

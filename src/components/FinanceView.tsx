@@ -192,7 +192,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       </div>
 
       {/* Date Filtering Bar */}
-      <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-4 sm:p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] relative z-30">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-md relative z-30">
         <DateRangeFilter onChange={setRange} />
       </div>
 
@@ -203,7 +203,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
           whileHover={{ y: -4, scale: 1.01 }}
-          className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] transition-all duration-300"
+          className="bg-white border border-slate-200 rounded-2xl p-5 shadow-md transition-all duration-300"
         >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Gross Revenue</span>
           <div className="flex justify-between items-end mt-2">
@@ -220,7 +220,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
           whileHover={{ y: -4, scale: 1.01 }}
-          className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] transition-all duration-300"
+          className="bg-white border border-slate-200 rounded-2xl p-5 shadow-md transition-all duration-300"
         >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Total Operational Costs</span>
           <div className="flex justify-between items-end mt-2">
@@ -237,7 +237,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
           whileHover={{ y: -4, scale: 1.01 }}
-          className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] transition-all duration-300"
+          className="bg-white border border-slate-200 rounded-2xl p-5 shadow-md transition-all duration-300"
         >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Operating Net Income</span>
           <div className="flex justify-between items-end mt-2">
@@ -254,7 +254,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
           whileHover={{ y: -4, scale: 1.01 }}
-          className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] transition-all duration-300"
+          className="bg-white border border-slate-200 rounded-2xl p-5 shadow-md transition-all duration-300"
         >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Net Profit Margin</span>
           <div className="flex justify-between items-end mt-2">
@@ -270,7 +270,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       {/* Allocation breakdown and audit ledger */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cost allocation breakdown */}
-        <div className="lg:col-span-1 bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+        <div className="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-6 shadow-md">
           <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-800 mb-4 font-sans">Expense Category Allocation</h3>
           <div className="space-y-4">
             {Object.keys(expensesByCategory).length === 0 ? (
@@ -301,7 +301,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         </div>
 
         {/* Expense audit list */}
-        <div className="lg:col-span-2 bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-md">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-800 font-sans">Expense Audit ledger</h3>
           </div>
@@ -382,7 +382,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       </div>
 
       {/* Invoice management segment */}
-      <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md">
         <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-800 mb-4 font-sans">Active Booking Receipts & Payment Auditing</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs min-w-[700px]">
@@ -425,7 +425,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         <AnimatePresence>
           {showAddForm && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => {
                 setShowAddForm(false);
                 setEditingExpense(null);
@@ -566,7 +566,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         <AnimatePresence>
           {deleteExpenseConfirmId && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteExpenseConfirmId(null)}
             >
               <motion.div 
@@ -612,7 +612,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         <AnimatePresence>
           {activeReceiptUrl && (
             <div 
-              className="fixed inset-0 bg-slate-955/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 cursor-zoom-out"
+              className="fixed inset-0 bg-slate-950/40 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4 cursor-zoom-out"
               onClick={() => setActiveReceiptUrl(null)}
             >
               <motion.div 

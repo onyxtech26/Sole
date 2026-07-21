@@ -30,14 +30,14 @@ html, body {
 
 /* Default Theme: Premium Light Glassmorphism (SOLE Custom) */
 :root, html {
-  --bg-primary: #f1f5f9;
-  --bg-panel: rgba(255, 255, 255, 0.7);
+  --bg-primary: #e2e8f0; /* Rich grey background for sharp card contrast */
+  --bg-panel: #ffffff;   /* Pure solid white for all card containers */
   --color-accent: #fd9707; /* SOLE Orange */
   --color-accent-glow: rgba(253, 151, 7, 0.08);
   --color-accent-border: rgba(253, 151, 7, 0.2);
   --text-primary: #0b1220; /* SOLE Navy */
   --text-secondary: #475569; /* Slate 600 */
-  --border-primary: rgba(11, 18, 32, 0.06);
+  --border-primary: rgba(11, 18, 32, 0.12);
   --gradient-start: #0b1220; /* SOLE Navy */
   --gradient-end: #fd9707; /* SOLE Orange */
 }
@@ -116,16 +116,29 @@ html.theme-terracotta {
 
 /* Classic Alabaster (Light Theme) */
 html.theme-alabaster, [data-theme="light"] {
-  --bg-primary: #f1f5f9;
-  --bg-panel: rgba(255, 255, 255, 0.7);
+  --bg-primary: #e2e8f0;
+  --bg-panel: #ffffff;
   --color-accent: #fd9707; /* SOLE Orange */
   --color-accent-glow: rgba(253, 151, 7, 0.08);
   --color-accent-border: rgba(253, 151, 7, 0.2);
   --text-primary: #0b1220;
   --text-secondary: #475569;
-  --border-primary: rgba(11, 18, 32, 0.06);
+  --border-primary: rgba(11, 18, 32, 0.12);
   --gradient-start: #0b1220; /* SOLE Navy */
   --gradient-end: #fd9707; /* SOLE Orange */
+}
+
+/* Animated Gradient Background for Login */
+.login-animated-bg {
+  background: linear-gradient(-45deg, #0b1220, #1e293b, #0f172a, #331f06, #1e1b4b, #fd9707, #0b1220);
+  background-size: 400% 400%;
+  animation: gradientFlow 18s ease infinite;
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* Font styles custom overrides classes */
@@ -174,17 +187,32 @@ html.theme-alabaster, [data-theme="light"] {
 
 /* Custom Fade Animation Classes */
 .animate-fade-in {
-  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.card-fade-in {
+  animation: cardFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes cardFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

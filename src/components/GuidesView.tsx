@@ -154,7 +154,7 @@ export default function GuidesView() {
     const isBreak = g.availability === 'On Break';
 
     return (
-      <div key={g.id} className="relative group overflow-hidden bg-white/40 border border-slate-200/80 hover:border-orange-500/30 rounded-2xl p-5 backdrop-blur-xl flex flex-col justify-between transition-all duration-350 hover:-translate-y-1 hover:shadow-xl">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} key={g.id} className="relative group overflow-hidden bg-white border border-slate-200 hover:border-orange-500/30 rounded-2xl p-5 shadow-md flex flex-col justify-between transition-all duration-350 hover:-translate-y-1 hover:shadow-xl">
         <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
 
         <div>
@@ -266,7 +266,7 @@ export default function GuidesView() {
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   };
 
@@ -297,7 +297,7 @@ export default function GuidesView() {
       </div>
 
       {/* Guide Filtering Controls */}
-      <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-4 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl shadow-black/[0.01]">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05, ease: [0.16, 1, 0.3, 1] }} className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-md">
         <div className="relative flex-grow w-full md:max-w-md">
           <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
           <input
@@ -312,7 +312,7 @@ export default function GuidesView() {
           <Sparkles className="w-3.5 h-3.5 text-orange-500" />
           <span>Lecturers verified with Academic degrees</span>
         </div>
-      </div>
+      </motion.div>
 
       {/* ─── Guides Section ─── */}
       <section>
@@ -355,7 +355,7 @@ export default function GuidesView() {
         <AnimatePresence>
           {showFormModal && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => {
                 setShowFormModal(false);
                 setEditingGuide(null);
@@ -543,7 +543,7 @@ export default function GuidesView() {
         <AnimatePresence>
           {deleteConfirmId && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteConfirmId(null)}
             >
               <motion.div 

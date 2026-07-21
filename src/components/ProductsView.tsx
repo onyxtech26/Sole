@@ -239,7 +239,7 @@ export default function ProductsView() {
         {/* Left Columns: Products catalog ledger */}
         <div className="lg:col-span-2 flex flex-col h-full space-y-4 overflow-hidden">
           {/* Search */}
-          <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-4 backdrop-blur-xl flex items-center gap-4 shadow-sm">
+          <div className="flex items-center gap-4">
             <div className="relative flex-grow">
               <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
               <input
@@ -247,22 +247,27 @@ export default function ProductsView() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search catalog by code or label..."
-                className="w-full bg-white/50 border border-slate-200/80 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-800 font-semibold placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white"
+                className="w-full bg-white/80 border border-slate-200/90 rounded-2xl pl-10 pr-4 py-3 text-sm text-slate-800 font-semibold placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white shadow-sm"
               />
             </div>
           </div>
 
           {/* Catalog grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 flex-grow overflow-y-auto pr-1 pb-4">
-            {filteredProducts.map(p => (
-              <div 
+            {filteredProducts.map((p, idx) => (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: idx * 0.05, ease: [0.16, 1, 0.3, 1] }}
                 key={p.code} 
                 onClick={() => {
                   setSelectedProduct(p);
                   setNewGradeCode(`TG${p.grades.length + 1}`);
                 }}
-                className={`bg-white/50 border rounded-2xl p-5 shadow-sm cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
-                  selectedProduct?.code === p.code ? 'border-orange-500 ring-2 ring-orange-500/10' : 'border-slate-200/80'
+                className={`border rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 ${
+                  selectedProduct?.code === p.code 
+                    ? 'bg-orange-50 border-orange-400 ring-2 ring-orange-500/20 shadow-md' 
+                    : 'bg-white border-slate-200 shadow-md hover:shadow-lg'
                 }`}
               >
                 <div className="flex justify-between items-start pb-3 border-b border-slate-100">
@@ -299,7 +304,7 @@ export default function ProductsView() {
                     </span>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -307,7 +312,7 @@ export default function ProductsView() {
         {/* Right Columns: Selected product's sub-grades editor */}
         <div className="lg:col-span-1 h-full overflow-y-auto pb-4 pr-1">
           {selectedProduct ? (
-            <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl space-y-6 shadow-sm">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1, ease: [0.16, 1, 0.3, 1] }} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-6 shadow-md">
               <div>
                 <span className="text-[10px] font-bold text-orange-600 font-mono uppercase tracking-widest">Catalog Subgrade Config</span>
                 <h3 className="text-base font-extrabold text-slate-900 font-sans mt-0.5">{selectedProduct.label} Options</h3>
@@ -317,7 +322,7 @@ export default function ProductsView() {
               <div className="space-y-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Defined Tour Grades</span>
                 {selectedProduct.grades.map(g => (
-                  <div key={g.code} className="p-3 bg-white/70 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm">
+                  <div key={g.code} className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-sm">
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="px-1.5 py-0.5 bg-orange-50 border border-orange-100 text-orange-600 font-mono font-black text-[9px] rounded">
@@ -384,7 +389,7 @@ export default function ProductsView() {
                   Save Option
                 </button>
               </form>
-            </div>
+            </motion.div>
           ) : (
             <div className="h-[250px] flex flex-col gap-2 items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl text-center p-6 bg-white/20">
               <Layers className="w-8 h-8 text-slate-300 animate-pulse" />
@@ -401,7 +406,7 @@ export default function ProductsView() {
         <AnimatePresence>
           {showAddProductModal && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setShowAddProductModal(false)}
             >
               <motion.div 
@@ -503,7 +508,7 @@ export default function ProductsView() {
         <AnimatePresence>
           {deleteProductConfirmCode && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteProductConfirmCode(null)}
             >
               <motion.div 
@@ -549,7 +554,7 @@ export default function ProductsView() {
         <AnimatePresence>
           {deleteGradeConfirmCode && (
             <div 
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteGradeConfirmCode(null)}
             >
               <motion.div 

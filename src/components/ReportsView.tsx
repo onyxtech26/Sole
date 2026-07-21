@@ -32,7 +32,7 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
   return (
     <div className="space-y-6 animate-fade-in print:p-0 print:m-0 print:bg-white print:text-black relative z-10">
       {/* Controls header */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-end bg-white/40 border border-slate-200/80 p-5 rounded-2xl backdrop-blur-xl shadow-xl shadow-black/[0.01] print:hidden">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-end bg-white border border-slate-200 p-5 rounded-2xl shadow-md print:hidden">
         <div className="flex flex-col gap-1.5 w-full sm:max-w-[200px]">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Operational Date</label>
           <CustomDatePicker value={reportDate} onChange={setReportDate} type="date" />

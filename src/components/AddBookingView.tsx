@@ -262,7 +262,7 @@ export default function AddBookingView({
 
       {/* AI Paste & Fill Accelerator */}
       {!editBookingRef && (
-        <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl shadow-xl shadow-black/[0.01] space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md space-y-4">
           <div>
             <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
               <Sparkles className="w-4.5 h-4.5 text-orange-600 animate-[pulse_2s_infinite]" />
@@ -300,7 +300,7 @@ export default function AddBookingView({
 
       <div className="w-full">
         {/* Main Form Container */}
-        <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-8 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-md">
           {/* Conflict warning alert */}
           {conflictWarning && (
             <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex gap-2.5 items-start border-l-4 border-l-rose-500 font-bold">

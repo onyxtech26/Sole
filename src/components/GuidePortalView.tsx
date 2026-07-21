@@ -40,7 +40,7 @@ export default function GuidePortalView({
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in p-4 sm:p-6 pb-20 relative z-10">
       {/* Header bar */}
-      <div className="flex justify-between items-center bg-white/40 border border-slate-200/80 p-5 rounded-3xl backdrop-blur-3xl shadow-xl shadow-black/[0.01]">
+      <div className="flex justify-between items-center bg-white border border-slate-200 p-5 rounded-3xl shadow-md">
         <div>
           <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest block font-sans">Guide Manifest Portal</span>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-1 font-sans">My Tour Schedule</h1>
@@ -56,7 +56,7 @@ export default function GuidePortalView({
       </div>
 
       {/* Date select picker */}
-      <div className="bg-white/40 border border-slate-200/80 p-5 rounded-3xl backdrop-blur-3xl shadow-xl shadow-black/[0.01] flex flex-col gap-2">
+      <div className="bg-white border border-slate-200 p-5 rounded-3xl shadow-md flex flex-col gap-2">
         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Operational Manifest Date</label>
         <div className="relative">
           <input
@@ -81,7 +81,7 @@ export default function GuidePortalView({
           </div>
         ) : (
           guideBookings.map(b => (
-            <div key={b.bookingRef} className="bg-white/40 border border-slate-200/80 rounded-3xl p-5 sm:p-6 backdrop-blur-3xl space-y-4 shadow-xl shadow-black/[0.01]">
+            <div key={b.bookingRef} className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 space-y-4 shadow-md">
               {/* Tour card header */}
               <div className="flex justify-between items-start gap-3 border-b border-slate-100 pb-3">
                 <div>

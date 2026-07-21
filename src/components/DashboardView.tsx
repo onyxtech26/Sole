@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { Calendar, Users, CheckCircle, Coins, ArrowRight, Upload, Info } from 'lucide-react';
 import { Booking, User } from '../types';
 import { getRelativeDateString } from '../utils/seed';
 import { DateRange, makeRange, inRange } from '../utils/dateFilter';
 import DateRangeFilter from './DateRangeFilter';
 import RollingNumber from './RollingNumber';
+import CommandSearch from './CommandSearch';
 
 interface DashboardViewProps {
   bookings: Booking[];
@@ -165,7 +167,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#0b1220] to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex justify-between items-start">
             <div className="space-y-1">
@@ -179,9 +181,9 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
               <Calendar className="w-4 h-4" />
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#0b1220] to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex justify-between items-start">
             <div className="space-y-1">
@@ -195,9 +197,9 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
               <Users className="w-4 h-4" />
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.15 }} className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#0b1220] to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex justify-between items-start">
             <div className="space-y-1">
@@ -211,10 +213,10 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
               <CheckCircle className="w-4 h-4" />
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {currentUser.role !== 'staff' && (
-          <div className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }} className="relative group overflow-hidden bg-theme-panel backdrop-blur-xl border border-theme-border hover:border-theme-accent-border rounded-2xl p-5 sm:p-6 shadow-xl shadow-black/[0.02] transition-all duration-300 hover:-translate-y-1">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#0b1220] to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex justify-between items-start">
               <div className="space-y-1">
@@ -228,14 +230,14 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
                 <Coins className="w-4 h-4" />
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
       {/* Grid of details: Recent Activity + Status Summary Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Bookings */}
-        <div className="lg:col-span-2 bg-theme-panel backdrop-blur-xl border border-theme-border rounded-2xl p-6 shadow-xl shadow-black/[0.01]">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.25 }} className="lg:col-span-2 bg-theme-panel backdrop-blur-xl border border-theme-border rounded-2xl p-6 shadow-xl shadow-black/[0.01]">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-extrabold text-theme-text font-sans">Recently Added Bookings</h3>
             <button 
@@ -277,10 +279,10 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
               ))
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Status Summary Chart */}
-        <div className="bg-theme-panel backdrop-blur-xl border border-theme-border rounded-2xl p-6 shadow-xl shadow-black/[0.01] flex flex-col">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.3 }} className="bg-theme-panel backdrop-blur-xl border border-theme-border rounded-2xl p-6 shadow-xl shadow-black/[0.01] flex flex-col">
           <h3 className="text-lg font-extrabold text-theme-text font-sans mb-6">Reservation Status Summary</h3>
           
           <div className="flex-grow flex flex-col justify-center items-center gap-6">
@@ -366,12 +368,12 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* CSV Legacy Bulk Importer - ONLY visible to managers */}
       {currentUser.role === 'manager' && (
-        <div className="bg-theme-panel backdrop-blur-xl border border-theme-border rounded-2xl p-6 shadow-xl shadow-black/[0.01]">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.35 }} className="bg-theme-panel backdrop-blur-xl border border-theme-border rounded-2xl p-6 shadow-xl shadow-black/[0.01]">
           <div className="mb-4">
             <h3 className="text-lg font-extrabold text-theme-text font-sans">Database Legacy CSV Import</h3>
             <p className="text-theme-muted text-sm mt-0.5">Select a structured CSV file representing your old reservation log book to bulk-import historical records.</p>
@@ -432,7 +434,7 @@ BR-1223400503,Charlie Davis,Guided Tour for Vatican Museum...,2026-07-09,14:00,2
               </div>
             </details>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
