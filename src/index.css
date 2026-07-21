@@ -28,9 +28,9 @@ html, body {
   transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
 }
 
-/* Default Theme: Premium White Glassmorphism (SOLE Custom) */
+/* Default Theme: Premium Light Glassmorphism (SOLE Custom) */
 :root, html {
-  --bg-primary: #ffffff;
+  --bg-primary: #f1f5f9;
   --bg-panel: rgba(255, 255, 255, 0.7);
   --color-accent: #fd9707; /* SOLE Orange */
   --color-accent-glow: rgba(253, 151, 7, 0.08);
@@ -116,7 +116,7 @@ html.theme-terracotta {
 
 /* Classic Alabaster (Light Theme) */
 html.theme-alabaster, [data-theme="light"] {
-  --bg-primary: #f4f6f9; /* premium soft slate-grey background to let cards pop */
+  --bg-primary: #f1f5f9;
   --bg-panel: rgba(255, 255, 255, 0.7);
   --color-accent: #fd9707; /* SOLE Orange */
   --color-accent-glow: rgba(253, 151, 7, 0.08);

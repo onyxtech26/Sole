@@ -252,7 +252,7 @@ export default function App() {
     return (
       <div className="fixed inset-0 z-50 bg-[#f8fafc] flex flex-col items-center justify-center text-slate-900 overflow-hidden font-sans">
         {/* Abstract floating background circles inside splash */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-45">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-25">
           <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[90px] animate-blob-float-1" />
           <div className="absolute bottom-[15%] right-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[90px] animate-blob-float-2" />
         </div>
@@ -318,6 +318,12 @@ export default function App() {
 
   return (
     <div className={`relative flex h-screen w-screen overflow-hidden bg-theme-bg text-theme-text font-style-${activeFont} transition-all duration-300`}>
+      {/* Abstract floating background circles like the splash screen */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-10">
+        <div className="absolute top-[10%] left-[10%] w-[450px] h-[450px] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[110px] animate-blob-float-1" />
+        <div className="absolute bottom-[15%] right-[10%] w-[450px] h-[450px] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[110px] animate-blob-float-2" />
+      </div>
+
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 inset-x-0 z-30 h-16 flex items-center justify-between px-4 bg-theme-panel/90 backdrop-blur-2xl border-b border-theme-border shadow-sm">
         <button

@@ -7,6 +7,7 @@ import CustomDatePicker from './CustomDatePicker';
 import DateRangeFilter from './DateRangeFilter';
 import { DateRange, makeRange, inRange } from '../utils/dateFilter';
 import { createPortal } from 'react-dom';
+import RollingNumber from './RollingNumber';
 
 const EXPENSES_STORAGE_KEY = 'sole_expenses';
 
@@ -191,47 +192,79 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       </div>
 
       {/* Date Filtering Bar */}
-      <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-4 sm:p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+      <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-4 sm:p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] relative z-30">
         <DateRangeFilter onChange={setRange} />
       </div>
 
       {/* Finance Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.05 }}
+          whileHover={{ y: -4, scale: 1.01 }}
+          className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] transition-all duration-300"
+        >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Gross Revenue</span>
           <div className="flex justify-between items-end mt-2">
-            <h3 className="text-2xl font-black text-slate-900">€{totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h3>
-            <ArrowUpRight className="w-5 h-5 text-emerald-500" />
+            <h3 className="text-2xl font-black text-slate-900">
+              <RollingNumber value={totalRevenue} isCurrency={true} />
+            </h3>
+            <ArrowUpRight className="w-5 h-5 text-emerald-500 animate-pulse" />
           </div>
           <span className="text-[10px] text-slate-400 block mt-2 font-semibold">Sum of active confirmed tours</span>
-        </div>
+        </motion.div>
 
-        <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          whileHover={{ y: -4, scale: 1.01 }}
+          className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] transition-all duration-300"
+        >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Total Operational Costs</span>
           <div className="flex justify-between items-end mt-2">
-            <h3 className="text-2xl font-black text-slate-900">€{totalExpensesApproved.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h3>
+            <h3 className="text-2xl font-black text-slate-900">
+              <RollingNumber value={totalExpensesApproved} isCurrency={true} />
+            </h3>
             <ArrowDownRight className="w-5 h-5 text-rose-500" />
           </div>
           <span className="text-[10px] text-slate-400 block mt-2 font-semibold">Approved fuel, catering, repairs</span>
-        </div>
+        </motion.div>
 
-        <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          whileHover={{ y: -4, scale: 1.01 }}
+          className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] transition-all duration-300"
+        >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Operating Net Income</span>
           <div className="flex justify-between items-end mt-2">
-            <h3 className="text-2xl font-black text-emerald-600">€{netIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h3>
+            <h3 className="text-2xl font-black text-emerald-600">
+              <RollingNumber value={netIncome} isCurrency={true} />
+            </h3>
             <Landmark className="w-5 h-5 text-emerald-500" />
           </div>
           <span className="text-[10px] text-slate-400 block mt-2 font-semibold">Revenue minus approved expenses</span>
-        </div>
+        </motion.div>
 
-        <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01]">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          whileHover={{ y: -4, scale: 1.01 }}
+          className="bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl shadow-xl shadow-black/[0.01] transition-all duration-300"
+        >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Net Profit Margin</span>
           <div className="flex justify-between items-end mt-2">
-            <h3 className="text-2xl font-black text-orange-600">{marginPercentage.toFixed(1)}%</h3>
+            <h3 className="text-2xl font-black text-orange-600">
+              <RollingNumber value={marginPercentage} />%
+            </h3>
             <CirclePercent className="w-5 h-5 text-orange-600" />
           </div>
           <span className="text-[10px] text-slate-400 block mt-2 font-semibold">High yield luxury service model</span>
-        </div>
+        </motion.div>
       </div>
 
       {/* Allocation breakdown and audit ledger */}
@@ -253,7 +286,12 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                       <span className="font-extrabold text-slate-800 shrink-0">€{amountNum.toFixed(2)} ({pct.toFixed(0)}%)</span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-gradient-to-r from-[#0b1220] to-orange-500 h-full rounded-full" style={{ width: `${pct}%` }} />
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="bg-gradient-to-r from-[#0b1220] to-orange-500 h-full rounded-full" 
+                      />
                     </div>
                   </div>
                 );

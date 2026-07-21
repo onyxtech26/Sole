@@ -648,7 +648,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
         </div>
 
         {/* Date scope selector — Today / Week / Month / Year / All */}
-        <div className="border-t border-slate-200/70 pt-4">
+        <div className="border-t border-slate-200/70 pt-4 relative z-30">
           <DateRangeFilter
             onChange={(r) => { setShowAll(false); setRange(r); }}
             allowAll

@@ -137,9 +137,9 @@ export default function CustomersView() {
       </div>
 
       {/* CRM Main Split Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-180px)] lg:h-[calc(100vh-200px)] min-h-[500px] overflow-hidden">
         {/* Left: Customer Directory List */}
-        <div className="lg:col-span-1 bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl flex flex-col h-[650px] shadow-xl shadow-black/[0.01]">
+        <div className="lg:col-span-1 bg-white/40 border border-slate-200/80 rounded-2xl p-5 backdrop-blur-xl flex flex-col h-full shadow-xl shadow-black/[0.01] overflow-hidden">
           <div className="relative mb-4">
             <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
             <input
@@ -195,7 +195,7 @@ export default function CustomersView() {
         </div>
 
         {/* Right: Client Profile Ledger Sheet */}
-        <div className="lg:col-span-2 bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl h-[650px] overflow-y-auto shadow-xl shadow-black/[0.01]">
+        <div className="lg:col-span-2 bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl h-full overflow-y-auto shadow-xl shadow-black/[0.01]">
           <AnimatePresence mode="wait">
             {selectedCustomer ? (
               <motion.div

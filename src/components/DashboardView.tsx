@@ -155,7 +155,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       {/* Welcome header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-end">
+      <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-end relative z-30">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-theme-text tracking-tight font-sans">Operational Dashboard</h1>
           <p className="text-theme-muted text-sm mt-1">Real-time booking intelligence and daily manifest controls.</p>

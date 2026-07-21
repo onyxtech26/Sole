@@ -235,9 +235,9 @@ export default function ProductsView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-[calc(100vh-180px)] lg:h-[calc(100vh-200px)] min-h-[500px] overflow-hidden">
         {/* Left Columns: Products catalog ledger */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 flex flex-col h-full space-y-4 overflow-hidden">
           {/* Search */}
           <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-4 backdrop-blur-xl flex items-center gap-4 shadow-sm">
             <div className="relative flex-grow">
@@ -253,7 +253,7 @@ export default function ProductsView() {
           </div>
 
           {/* Catalog grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 flex-grow overflow-y-auto pr-1 pb-4">
             {filteredProducts.map(p => (
               <div 
                 key={p.code} 
@@ -305,7 +305,7 @@ export default function ProductsView() {
         </div>
 
         {/* Right Columns: Selected product's sub-grades editor */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full overflow-y-auto pb-4 pr-1">
           {selectedProduct ? (
             <div className="bg-white/40 border border-slate-200/80 rounded-2xl p-6 backdrop-blur-xl space-y-6 shadow-sm">
               <div>

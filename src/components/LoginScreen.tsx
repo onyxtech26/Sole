@@ -35,7 +35,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     <div className="fixed inset-0 w-screen h-screen bg-[#f8fafc] flex items-center justify-center z-50 p-4 overflow-hidden font-sans">
       
       {/* Splash Screen Style Ambient Gradient Blobs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-60">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-20">
         <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[90px] animate-blob-float-1" />
         <div className="absolute bottom-[15%] right-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[90px] animate-blob-float-2" />
       </div>
