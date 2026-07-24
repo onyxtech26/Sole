@@ -6,10 +6,14 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { motion, AnimatePresence } from 'motion/react';
 import DateRangeFilter from './DateRangeFilter';
-import { DateRange, makeRange, inRange, toDateStr } from '../utils/dateFilter';
+import { DateRange, makeRange, inRange, toDateStr, parseLocalDate } from '../utils/dateFilter';
 import { loadWhatsappTemplates, saveWhatsappTemplates, fillTemplate, WhatsappTemplate } from '../utils/whatsappTemplates';
 import WhatsappTemplateManager from './WhatsappTemplateManager';
 import { createPortal } from 'react-dom';
+import { usePersistentValue } from '../utils/storage';
+import { isPlaceholderName } from '../utils/viatorImport';
+import { SEED_GUIDES } from '../utils/seed';
+import { GUIDES_STORAGE_KEY } from './GuidesView';
 
 interface ScheduleViewProps {
   bookings: Booking[];
@@ -64,6 +68,10 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
   // Date scope for the board: Today / Week / Month / Year (+ All). Defaults to Today.
   const [range, setRange] = useState<DateRange>(() => makeRange('today', new Date()));
   const [showAll, setShowAll] = useState(false);
+
+  // Live guide directory (shared store) — used for the group guide dropdown and
+  // manifest phone lookup, so assignments match the real Guides & Staff roster.
+  const guides = usePersistentValue<GuideProfile[]>(GUIDES_STORAGE_KEY, SEED_GUIDES);
 
   // Concrete anchor date used when creating brand-new groups / naming exports.
   const anchorDateStr = toDateStr(range.start);
@@ -432,11 +440,11 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
     const today = new Date();
 
     dayBookings.forEach(b => {
-      const travelDateObj = new Date(b.travelDate);
+      const travelDateObj = parseLocalDate(b.travelDate);
       const diffTime = travelDateObj.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      const hasMissingNames = b.travelers.some(t => !t.trim() || t.includes('Traveler'));
+      const hasMissingNames = b.namesComplete === false || b.travelers.some(isPlaceholderName);
       if (diffDays <= 7 && diffDays >= 0 && hasMissingNames) {
         alerts.push({
           bookingRef: b.bookingRef,
@@ -461,18 +469,11 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
     return alerts;
   }, [dayBookings]);
 
-  // Look up a guide/staff phone number by name from the saved directory.
+  // Look up a guide/staff phone number by name from the live directory.
   const guidePhoneByName = (name: string | null): string => {
     if (!name) return '';
-    try {
-      const stored = localStorage.getItem('sole_guides');
-      if (!stored) return '';
-      const list = JSON.parse(stored) as { name: string; phone?: string }[];
-      const match = list.find(g => g.name.toLowerCase() === name.toLowerCase());
-      return match?.phone || '';
-    } catch {
-      return '';
-    }
+    const match = guides.find(g => g.name.toLowerCase() === name.toLowerCase());
+    return match?.phone || '';
   };
 
   const handleExportPDF = () => {
@@ -933,11 +934,12 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                       className="bg-slate-55 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 outline-none"
                     >
                       <option value="">No Guide Assigned</option>
-                      <option value="Felice">Felice</option>
-                      <option value="Carlo Maria">Carlo Maria</option>
-                      <option value="Susanna">Susanna</option>
-                      <option value="Orietta">Orietta</option>
-                      <option value="Liliana">Liliana</option>
+                      {guides.map(g => (
+                        <option key={g.id} value={g.name}>{g.name}</option>
+                      ))}
+                      {editingGroup.guideName && !guides.some(g => g.name === editingGroup.guideName) && (
+                        <option value={editingGroup.guideName}>{editingGroup.guideName}</option>
+                      )}
                     </select>
                   </div>
 

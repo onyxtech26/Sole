@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Eye, EyeOff, ShieldAlert, Sparkles, ArrowRight, Lock, User as UserIcon, ExternalLink } from 'lucide-react';
+import { Eye, EyeOff, ShieldAlert, Sparkles, ArrowRight, Lock, User as UserIcon, ExternalLink, Loader2 } from 'lucide-react';
 import { User } from '../types';
+import { signIn } from '../lib/auth';
 
 interface LoginScreenProps {
-  onLogin: (user: User) => void;
+  onLogin: (user: User) => void | Promise<void>;
 }
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
@@ -12,33 +13,27 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedUser = username.toLowerCase().trim();
-
-    if (trimmedUser === 'admin' && password === 'admin') {
-      setError('');
-      onLogin({ username: 'Admin', role: 'manager' });
-    } else if (trimmedUser === 'staff' && password === 'staff') {
-      setError('');
-      onLogin({ username: 'Staff User', role: 'staff' });
-    } else if (trimmedUser === 'guide' && password === 'guide') {
-      setError('');
-      onLogin({ username: 'Guide User', role: 'guide' });
-    } else {
-      setError("Incorrect username or password. Use demo credentials below.");
+    if (loading) return;
+    setLoading(true);
+    setError('');
+    const { user, error: authError } = await signIn(username, password);
+    if (authError || !user) {
+      setError(authError || 'Sign in failed.');
+      setLoading(false);
+      return;
     }
+    await onLogin(user);
+    setLoading(false);
   };
 
-  const handleDemoLogin = (roleUser: string, rolePass: string) => {
+  // Quick-fill a username (operators still type their own password).
+  const handleQuickFill = (roleUser: string) => {
     setUsername(roleUser);
-    setPassword(rolePass);
     setError('');
-    
-    if (roleUser === 'admin') onLogin({ username: 'Admin', role: 'manager' });
-    else if (roleUser === 'staff') onLogin({ username: 'Staff User', role: 'staff' });
-    else if (roleUser === 'guide') onLogin({ username: 'Guide User', role: 'guide' });
   };
 
   return (
@@ -139,52 +134,51 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           )}
 
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: loading ? 1 : 1.02 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
             type="submit"
-            className="w-full bg-[#0b1220] hover:bg-[#161f33] text-white font-black py-4 rounded-2xl shadow-xl shadow-[#0b1220]/20 transition-all duration-300 text-sm flex items-center justify-center gap-2 cursor-pointer mt-2"
+            disabled={loading}
+            className="w-full bg-[#0b1220] hover:bg-[#161f33] text-white font-black py-4 rounded-2xl shadow-xl shadow-[#0b1220]/20 transition-all duration-300 text-sm flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-70 disabled:cursor-wait"
           >
-            <span>Sign In to Dashboard</span>
-            <ArrowRight className="w-4 h-4" />
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Signing in…</span>
+              </>
+            ) : (
+              <>
+                <span>Sign In to Dashboard</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </motion.button>
         </form>
 
-        {/* Demo Credentials Quick Switcher */}
+        {/* Team Quick Access — fills the username, then enter your password */}
         <div className="mt-6 pt-5 border-t border-slate-100">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-orange-500" /> Demo Quick Access
+              <Sparkles className="w-3 h-3 text-orange-500" /> Team Members
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">Click to autofill</span>
+            <span className="text-[10px] text-slate-400 font-mono">Tap to fill username</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('admin', 'admin')}
-              className="bg-slate-50 hover:bg-orange-50/80 border border-slate-200/80 hover:border-orange-300 rounded-xl p-2.5 text-left transition duration-200 group cursor-pointer"
-            >
-              <span className="text-xs font-extrabold text-slate-800 group-hover:text-orange-600 block">Admin</span>
-              <span className="text-[10px] text-slate-400 font-mono block">admin</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('staff', 'staff')}
-              className="bg-slate-50 hover:bg-orange-50/80 border border-slate-200/80 hover:border-orange-300 rounded-xl p-2.5 text-left transition duration-200 group cursor-pointer"
-            >
-              <span className="text-xs font-extrabold text-slate-800 group-hover:text-orange-600 block">Staff</span>
-              <span className="text-[10px] text-slate-400 font-mono block">staff</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('guide', 'guide')}
-              className="bg-slate-50 hover:bg-orange-50/80 border border-slate-200/80 hover:border-orange-300 rounded-xl p-2.5 text-left transition duration-200 group cursor-pointer"
-            >
-              <span className="text-xs font-extrabold text-slate-800 group-hover:text-orange-600 block">Guide</span>
-              <span className="text-[10px] text-slate-400 font-mono block">guide</span>
-            </button>
+            {([
+              { user: 'sina', label: 'Sina', tier: 'Full access' },
+              { user: 'masoud', label: 'Masoud', tier: 'Full access' },
+              { user: 'tina', label: 'Tina', tier: 'No finance' },
+            ]).map(m => (
+              <button
+                key={m.user}
+                type="button"
+                onClick={() => handleQuickFill(m.user)}
+                className="bg-slate-50 hover:bg-orange-50/80 border border-slate-200/80 hover:border-orange-300 rounded-xl p-2.5 text-left transition duration-200 group cursor-pointer"
+              >
+                <span className="text-xs font-extrabold text-slate-800 group-hover:text-orange-600 block">{m.label}</span>
+                <span className="text-[10px] text-slate-400 font-mono block">{m.tier}</span>
+              </button>
+            ))}
           </div>
         </div>
 

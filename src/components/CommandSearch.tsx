@@ -22,6 +22,7 @@ interface SearchResult {
 
 const isViewAllowed = (role: string, view: string) => {
   if (role === 'manager') return true;
+  if (role === 'operations') return view !== 'finance';
   if (role === 'staff') {
     return view !== 'guides' && view !== 'finance';
   }
@@ -121,7 +122,7 @@ export default function CommandSearch({ bookings, currentUser, onNavigate, class
           title: `${b.leadTraveler} (${b.bookingRef})`,
           subtitle: `${b.tourName} • ${b.travelDate} @ ${b.tourTime}`,
           badge: b.status,
-          badgeColor: b.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : b.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200',
+          badgeColor: b.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : b.status === 'Modified' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : b.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200',
           action: () => {
             onNavigate('bookings');
             setIsOpen(false);

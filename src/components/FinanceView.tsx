@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Coins, CirclePercent, ArrowUpRight, ArrowDownRight, Plus, FileText, CheckCircle2, AlertCircle, ShoppingBag, Landmark, Eye, X, Trash2, Edit } from 'lucide-react';
+import { Coins, CirclePercent, ArrowUpRight, ArrowDownRight, Plus, FileText, CheckCircle2, AlertCircle, ShoppingBag, Landmark, Eye, X, Trash2, Edit, Upload } from 'lucide-react';
 import { Booking, Expense, ExpenseCategory } from '../types';
 import { SEED_EXPENSES } from '../utils/seed';
 import { motion, AnimatePresence } from 'motion/react';
@@ -8,6 +8,8 @@ import DateRangeFilter from './DateRangeFilter';
 import { DateRange, makeRange, inRange } from '../utils/dateFilter';
 import { createPortal } from 'react-dom';
 import RollingNumber from './RollingNumber';
+import { writeStore } from '../utils/storage';
+import { uploadMedia } from '../lib/storageUpload';
 
 const EXPENSES_STORAGE_KEY = 'sole_expenses';
 
@@ -31,6 +33,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
   const [newDesc, setNewDesc] = useState('');
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
   const [receiptUrl, setReceiptUrl] = useState('');
+  const [receiptUploading, setReceiptUploading] = useState(false);
 
   // Date-range filter (Today / Week / Month / Year), defaults to Month.
   const [range, setRange] = useState<DateRange>(() => makeRange('month', new Date()));
@@ -51,7 +54,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       }
     } else {
       setExpenses(SEED_EXPENSES);
-      localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(SEED_EXPENSES));
+      writeStore(EXPENSES_STORAGE_KEY, SEED_EXPENSES);
     }
   }, []);
 
@@ -76,7 +79,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
 
   const saveExpenses = (list: Expense[]) => {
     setExpenses(list);
-    localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(list));
+    writeStore(EXPENSES_STORAGE_KEY, list);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -109,7 +112,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
     } else {
       // Add mode
       const newExp: Expense = {
-        id: `EXP-${500 + expenses.length + 1}`,
+        id: `EXP-${crypto.randomUUID().slice(0, 8)}`,
         category: newCategory,
         customCategory: newCategory === 'Other' ? customCategory.trim() : undefined,
         amount: parseFloat(newAmount) || 0,
@@ -148,7 +151,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
   // Financial calculations based on filtered lists - All expenses are considered active/approved costs
   const totalRevenue = useMemo(() => {
     return filteredBookings
-      .filter(b => b.status === 'Confirmed')
+      .filter(b => b.status === 'Confirmed' || b.status === 'Modified')
       .reduce((sum, b) => sum + b.amount, 0);
   }, [filteredBookings]);
 
@@ -241,10 +244,10 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Operating Net Income</span>
           <div className="flex justify-between items-end mt-2">
-            <h3 className="text-2xl font-black text-emerald-600">
+            <h3 className={`text-2xl font-black ${netIncome < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
               <RollingNumber value={netIncome} isCurrency={true} />
             </h3>
-            <Landmark className="w-5 h-5 text-emerald-500" />
+            <Landmark className={`w-5 h-5 ${netIncome < 0 ? 'text-rose-500' : 'text-emerald-500'}`} />
           </div>
           <span className="text-[10px] text-slate-400 block mt-2 font-semibold">Revenue minus approved expenses</span>
         </motion.div>
@@ -258,10 +261,10 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         >
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Net Profit Margin</span>
           <div className="flex justify-between items-end mt-2">
-            <h3 className="text-2xl font-black text-orange-600">
+            <h3 className={`text-2xl font-black ${marginPercentage < 0 ? 'text-rose-600' : 'text-orange-600'}`}>
               <RollingNumber value={marginPercentage} />%
             </h3>
-            <CirclePercent className="w-5 h-5 text-orange-600" />
+            <CirclePercent className={`w-5 h-5 ${marginPercentage < 0 ? 'text-rose-500' : 'text-orange-600'}`} />
           </div>
           <span className="text-[10px] text-slate-400 block mt-2 font-semibold">High yield luxury service model</span>
         </motion.div>
@@ -525,14 +528,36 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Attachment Image URL</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice / Receipt Attachment</label>
                     <input
                       type="text"
                       value={receiptUrl}
                       onChange={e => setReceiptUrl(e.target.value)}
-                      placeholder="https://images.unsplash.com/... or upload"
+                      placeholder="Paste an image URL or upload a file below"
                       className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500 focus:bg-white"
                     />
+                    <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 hover:border-orange-400 rounded-xl py-2 cursor-pointer hover:bg-slate-50 transition group text-[11px] font-bold text-slate-500 group-hover:text-orange-600">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{receiptUploading ? 'Uploading…' : 'Upload receipt image'}</span>
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setReceiptUploading(true);
+                          try {
+                            const url = await uploadMedia(file, 'receipts');
+                            setReceiptUrl(url);
+                          } catch {
+                            alert('Upload failed. You can paste an image URL instead.');
+                          } finally {
+                            setReceiptUploading(false);
+                          }
+                        }}
+                      />
+                    </label>
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">

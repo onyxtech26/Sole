@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit, Sparkles, Layers, ShoppingBag, CheckSquare, Search, AlertCircle, Save, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
+import { writeStore } from '../utils/storage';
 
-interface ProductGrade {
+export interface ProductGrade {
   code: string; // TG1, TG2, TG3
   name: string; // e.g. "Semi-Private Colosseo"
   capacity: number; // e.g. 7, 24
 }
 
-interface Product {
+export interface Product {
   code: string; // 5524558P4
   name: string; // Private Colosseo
   label: string; // Private Colosseum Tour
@@ -17,7 +18,11 @@ interface Product {
   grades: ProductGrade[];
 }
 
-const DEFAULT_PRODUCTS: Product[] = [
+// Storage key + defaults are the single source of truth for the product catalog.
+// Consumers (booking form, schedule board) read these instead of hardcoding lists.
+export const PRODUCTS_STORAGE_KEY = 'sole_custom_products';
+
+export const DEFAULT_PRODUCTS: Product[] = [
   {
     code: '5524558P4',
     name: 'Private Colosseo',
@@ -108,7 +113,7 @@ export default function ProductsView() {
   const [deleteGradeConfirmCode, setDeleteGradeConfirmCode] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('sole_custom_products');
+    const stored = localStorage.getItem(PRODUCTS_STORAGE_KEY);
     if (stored) {
       try {
         setProducts(JSON.parse(stored));
@@ -117,13 +122,14 @@ export default function ProductsView() {
       }
     } else {
       setProducts(DEFAULT_PRODUCTS);
-      localStorage.setItem('sole_custom_products', JSON.stringify(DEFAULT_PRODUCTS));
+      writeStore(PRODUCTS_STORAGE_KEY, DEFAULT_PRODUCTS);
     }
   }, []);
 
   const saveProducts = (list: Product[]) => {
     setProducts(list);
-    localStorage.setItem('sole_custom_products', JSON.stringify(list));
+    // writeStore broadcasts so the booking form / schedule board pick up changes live.
+    writeStore(PRODUCTS_STORAGE_KEY, list);
   };
 
   const handleAddProduct = (e: React.FormEvent) => {

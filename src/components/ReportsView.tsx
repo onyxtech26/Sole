@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Printer, Calendar, ShieldAlert } from 'lucide-react';
 import { Booking, User } from '../types';
 import { getRelativeDateString } from '../utils/seed';
+import { parseLocalDate } from '../utils/dateFilter';
 import CustomDatePicker from './CustomDatePicker';
 
 interface ReportsViewProps {
@@ -23,7 +24,7 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
   const totalRevenueSum = dayBookings.reduce((sum, b) => sum + b.amount, 0);
 
   const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const dateFormatted = new Date(reportDate).toLocaleDateString('en-US', dateOptions);
+  const dateFormatted = parseLocalDate(reportDate).toLocaleDateString('en-US', dateOptions);
 
   const handlePrint = () => {
     window.print();
@@ -76,7 +77,7 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
           <div className="border border-slate-200 bg-slate-50 p-5 rounded-lg">
             <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Est. Daily Revenue</p>
             <h3 className="text-2xl font-extrabold text-slate-900">
-              {currentUser.role === 'staff' ? 'REDACTED' : `€${totalRevenueSum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              {currentUser.role !== 'manager' ? 'REDACTED' : `€${totalRevenueSum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </h3>
           </div>
         </div>
@@ -102,7 +103,7 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
                   <th className="p-3 text-center w-[120px] whitespace-nowrap">PAX</th>
                   <th className="p-3 whitespace-nowrap">Travelers Manifest</th>
                   <th className="p-3 whitespace-nowrap">Phone</th>
-                  {currentUser.role !== 'staff' && <th className="p-3 w-[95px] text-right whitespace-nowrap">Payout</th>}
+                  {currentUser.role === 'manager' && <th className="p-3 w-[95px] text-right whitespace-nowrap">Payout</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-slate-700">
@@ -125,7 +126,7 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
                       {b.travelers && b.travelers.length > 0 ? b.travelers.join(', ') : b.leadTraveler}
                     </td>
                     <td className="p-3 font-mono whitespace-nowrap">{b.phone || 'N/A'}</td>
-                    {currentUser.role !== 'staff' && (
+                    {currentUser.role === 'manager' && (
                       <td className="p-3 font-mono text-right font-bold text-slate-900 whitespace-nowrap">
                         €{b.amount.toFixed(2)}
                       </td>

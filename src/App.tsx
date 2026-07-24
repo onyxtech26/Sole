@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
 import { LayoutDashboard, CalendarDays, PlusCircle, FileSpreadsheet, Sun, Moon, LogOut, Users, Sparkles, Coins, Trello, Layers, Menu, X } from 'lucide-react';
 import { Booking, User } from './types';
-import { DEFAULT_SEED_DATA } from './utils/seed';
+import { usePersistentState, initSupabaseSync, teardownSupabaseSync } from './utils/storage';
+import { getCurrentUser, signOut as authSignOut } from './lib/auth';
 import LoginScreen from './components/LoginScreen';
 import DashboardView from './components/DashboardView';
 import BookingsView from './components/BookingsView';
 import ReportsView from './components/ReportsView';
-import GuidePortalView from './components/GuidePortalView';
 import CustomersView from './components/CustomersView';
 import GuidesView from './components/GuidesView';
 import FinanceView from './components/FinanceView';
@@ -16,13 +16,17 @@ import ScheduleView from './components/ScheduleView';
 import ProductsView from './components/ProductsView';
 
 const STORAGE_KEY = 'sole_reservations';
-const USER_SESSION_KEY = 'active_user';
 const THEME_KEY = 'sole_theme';
 const ACTIVE_THEME_KEY = 'sole_active_theme_preset';
 const ACTIVE_FONT_KEY = 'sole_active_font';
 
+// Role access matrix:
+//  - manager    (Sina, Masoud): full access to everything
+//  - operations (Tina):         everything EXCEPT the financial section
+//  - staff / guide:             legacy tiers kept for completeness
 const isViewAllowed = (role: string, view: string) => {
   if (role === 'manager') return true;
+  if (role === 'operations') return view !== 'finance';
   if (role === 'staff') {
     return view !== 'guides' && view !== 'finance';
   }
@@ -34,8 +38,9 @@ const isViewAllowed = (role: string, view: string) => {
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = usePersistentState<Booking[]>(STORAGE_KEY, () => []);
   const [activeView, setActiveView] = useState<string>('dashboard');
+  const [authReady, setAuthReady] = useState<boolean>(false);
   const [editBookingRef, setEditBookingRef] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [activeThemePreset, setActiveThemePreset] = useState<string>('alabaster');
@@ -55,44 +60,23 @@ export default function App() {
       setIsSplashing(false);
     }, 2200);
 
-    // Bookings
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    // Restore an existing Supabase session (survives reloads). If present,
+    // hydrate all shared data from Supabase + open the realtime channel before
+    // showing the app so views mount with live data already in cache.
+    (async () => {
       try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          // Normalize and verify fields exist (e.g. checkedInGuests)
-          const normalized = parsed.map(b => ({
-            ...b,
-            checkedInGuests: b.checkedInGuests || []
-          }));
-          setBookings(normalized);
-        } else {
-          setBookings(DEFAULT_SEED_DATA);
+        const user = await getCurrentUser();
+        if (user) {
+          await initSupabaseSync();
+          setCurrentUser(user);
+          if (user.role === 'guide') setActiveView('schedule');
         }
       } catch (e) {
-        setBookings(DEFAULT_SEED_DATA);
+        console.error('Session restore failed:', e);
+      } finally {
+        setAuthReady(true);
       }
-    } else {
-      setBookings(DEFAULT_SEED_DATA);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SEED_DATA));
-    }
-
-    // Login session
-    const session = sessionStorage.getItem(USER_SESSION_KEY);
-    if (session) {
-      try {
-        const userObj = JSON.parse(session);
-        if (userObj && userObj.role) {
-          setCurrentUser(userObj);
-          if (userObj.role === 'guide') {
-            setActiveView('schedule');
-          }
-        }
-      } catch (e) {
-        sessionStorage.removeItem(USER_SESSION_KEY);
-      }
-    }
+    })();
 
     // Theme Presets & Fonts (Locked to premium alabaster/light theme for solid white bg)
     const storedThemePreset = 'alabaster';
@@ -119,24 +103,32 @@ export default function App() {
     return () => clearTimeout(splashTimer);
   }, []);
 
+  // setBookings (from usePersistentState) writes the local cache and pushes a
+  // diff to Supabase; realtime keeps every other client in sync.
   const saveBookingsState = (newBookings: Booking[]) => {
     setBookings(newBookings);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newBookings));
   };
 
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-    sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(user));
-    if (user.role === 'guide') {
-      setActiveView('schedule');
-    } else {
-      setActiveView('dashboard');
+  // Called by LoginScreen after a successful Supabase sign-in. Hydrate shared
+  // data + open realtime before revealing the app.
+  const handleLogin = async (user: User) => {
+    try {
+      await initSupabaseSync();
+    } catch (e) {
+      console.error('Initial sync failed:', e);
     }
+    setCurrentUser(user);
+    setActiveView(user.role === 'guide' ? 'schedule' : 'dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authSignOut();
+    } catch (e) {
+      console.error('Sign out failed:', e);
+    }
+    teardownSupabaseSync();
     setCurrentUser(null);
-    sessionStorage.removeItem(USER_SESSION_KEY);
     setActiveView('dashboard');
   };
 
@@ -178,10 +170,12 @@ export default function App() {
     }
   };
 
-  // Add bulk or single bookings
+  // Add bulk or single bookings. Upsert by bookingRef so re-importing the same
+  // batch updates existing records instead of creating duplicate references.
   const handleAddBookings = (newBookings: Booking[]) => {
-    const updated = [...bookings, ...newBookings];
-    saveBookingsState(updated);
+    const byRef = new Map<string, Booking>(bookings.map(b => [b.bookingRef, b] as [string, Booking]));
+    newBookings.forEach(b => byRef.set(b.bookingRef, b));
+    saveBookingsState(Array.from(byRef.values()));
   };
 
   // Save single booking (Insert or Update)
@@ -247,8 +241,9 @@ export default function App() {
     saveBookingsState(updated);
   };
 
-  // Splash Screen Overlay Animation
-  if (isSplashing) {
+  // Splash Screen Overlay Animation — held until the initial splash timer AND
+  // the Supabase session-restore check have both completed.
+  if (isSplashing || !authReady) {
     return (
       <div className="fixed inset-0 z-50 bg-[#f8fafc] flex flex-col items-center justify-center text-slate-900 overflow-hidden font-sans">
         {/* Abstract floating background circles inside splash */}

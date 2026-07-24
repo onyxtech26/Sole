@@ -17,7 +17,7 @@ export interface Booking {
   meetingPoint: string;
   amount: number;
   currency: string;
-  status: 'Confirmed' | 'Pending' | 'Cancelled';
+  status: 'Confirmed' | 'Modified' | 'Pending' | 'Cancelled';
   paymentStatus: 'Paid' | 'Partially Paid' | 'Unpaid' | 'Refunded';
   assignedGuide: string;
   assignedDriver: string;
@@ -26,11 +26,17 @@ export interface Booking {
   serviceLineItems?: { description: string; qty: number; unitPrice: number; total: number }[];
   notes?: string;
   namesLocked?: boolean; // passport names verified & locked for ticket issuance
+  namesComplete?: boolean; // all traveller names filled in manually (no placeholders left)
+  tourGradeCode?: string; // e.g. "TG4" (Viator "Codice livello del tour")
+  tourGradeTitle?: string; // e.g. "Semi Private (max 7 people) 14:00"
+  source?: 'manual' | 'viator_import';
 }
 
 export interface User {
   username: string;
-  role: 'manager' | 'staff' | 'guide';
+  role: 'manager' | 'operations' | 'staff' | 'guide';
+  fullName?: string;
+  id?: string;
 }
 
 export interface GuideProfile {

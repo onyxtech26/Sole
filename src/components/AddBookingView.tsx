@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, CheckCircle, AlertTriangle, AlertCircle, Plus, Edit, Sparkles, CheckSquare } from 'lucide-react';
-import { Booking, User } from '../types';
+import { Booking, User, GuideProfile } from '../types';
 import { ViatorParser } from '../utils/parser';
+import { computeNamesComplete } from '../utils/viatorImport';
 import CustomDatePicker from './CustomDatePicker';
+import { usePersistentValue } from '../utils/storage';
+import { SEED_GUIDES } from '../utils/seed';
+import { DEFAULT_PRODUCTS, PRODUCTS_STORAGE_KEY, Product } from './ProductsView';
+import { GUIDES_STORAGE_KEY } from './GuidesView';
 
 interface AddBookingViewProps {
   bookings: Booking[];
@@ -20,13 +25,6 @@ const TOUR_OPTIONS = [
   "Discover North Cyprus: Private Famagusta Tour",
   "Guided Tour for Vatican Museum and Sistin Chapel",
   "Rome Highlights by Golf Cart Tour"
-];
-
-const GUIDE_OPTIONS = [
-  "Colosseo guide",
-  "Joseph guide",
-  "Golf Cart guide",
-  "Famagusta guide"
 ];
 
 export default function AddBookingView({
@@ -52,6 +50,22 @@ export default function AddBookingView({
   const [meetingPoint, setMeetingPoint] = useState('');
   const [status, setStatus] = useState<Booking['status']>('Confirmed');
   const [travelersText, setTravelersText] = useState('');
+
+  // Live directories — read from the shared store so guides/products added in
+  // their own views (or another tab) appear here immediately.
+  const guides = usePersistentValue<GuideProfile[]>(GUIDES_STORAGE_KEY, SEED_GUIDES);
+  const products = usePersistentValue<Product[]>(PRODUCTS_STORAGE_KEY, DEFAULT_PRODUCTS);
+  const guideOptions = guides.map(g => g.name).filter(Boolean);
+  const tourOptions = Array.from(
+    new Set([...products.map(p => p.label), ...products.map(p => p.name), ...TOUR_OPTIONS].filter(Boolean))
+  );
+
+  // Pick a tour and auto-fill its product code when it maps to a catalog product.
+  const handleSelectTour = (value: string) => {
+    setTourName(value);
+    const match = products.find(p => p.label === value || p.name === value);
+    if (match) setProductCode(match.code);
+  };
 
   // Paste Area State
   const [pasteText, setPasteText] = useState('');
@@ -206,6 +220,21 @@ export default function AddBookingView({
       return;
     }
 
+    if (!tourName) {
+      alert("Please select a Tour / Product.");
+      return;
+    }
+
+    if (!travelDate) {
+      alert("Please provide a Travel Date.");
+      return;
+    }
+
+    if (!tourTime) {
+      alert("Please provide a Tour Time.");
+      return;
+    }
+
     // Ensure booking reference uniqueness if NOT in edit mode
     if (!editBookingRef && bookings.some(b => b.bookingRef === bookingRef.trim())) {
       alert(`❌ Reference code "${bookingRef.trim()}" is already registered. Please provide a unique reference code.`);
@@ -217,7 +246,19 @@ export default function AddBookingView({
       .map(t => t.trim())
       .filter(Boolean);
 
+    // Track whether all passenger names have been filled in (no placeholders),
+    // so the schedule board's name-lock radar can stop flagging this booking.
+    const namesComplete = computeNamesComplete(travelers);
+
+    // When editing, spread the existing record first so fields the form does not
+    // expose (notes, serviceLineItems, namesLocked, currency, driver, etc.) are
+    // preserved instead of being silently wiped.
+    const existing = editBookingRef
+      ? bookings.find(b => b.bookingRef === editBookingRef)
+      : undefined;
+
     const updatedBooking: Booking = {
+      ...(existing || {}),
       bookingRef: bookingRef.trim(),
       tourName,
       productCode: productCode.trim(),
@@ -230,19 +271,14 @@ export default function AddBookingView({
       language,
       meetingPoint: meetingPoint.trim(),
       amount,
-      currency: 'EUR',
+      currency: existing?.currency || 'EUR',
       status,
-      paymentStatus: editBookingRef
-        ? (bookings.find(b => b.bookingRef === editBookingRef)?.paymentStatus || 'Unpaid')
-        : 'Unpaid',
+      paymentStatus: existing?.paymentStatus || 'Unpaid',
       assignedGuide,
-      assignedDriver: editBookingRef
-        ? (bookings.find(b => b.bookingRef === editBookingRef)?.assignedDriver || 'None')
-        : 'None',
+      assignedDriver: existing?.assignedDriver || 'None',
       okStatus: status === 'Confirmed',
-      checkedInGuests: editBookingRef
-        ? (bookings.find(b => b.bookingRef === editBookingRef)?.checkedInGuests || [])
-        : []
+      checkedInGuests: existing?.checkedInGuests || [],
+      namesComplete,
     };
 
     onSaveBooking(updatedBooking);
@@ -338,9 +374,12 @@ export default function AddBookingView({
                   }`}
                 >
                   <option value="">No Guide Assigned</option>
-                  {GUIDE_OPTIONS.map((g, idx) => (
+                  {guideOptions.map((g, idx) => (
                     <option key={idx} value={g}>{g}</option>
                   ))}
+                  {assignedGuide && !guideOptions.includes(assignedGuide) && (
+                    <option value={assignedGuide}>{assignedGuide}</option>
+                  )}
                 </select>
               </div>
 
@@ -350,16 +389,16 @@ export default function AddBookingView({
                 <select
                   required
                   value={tourName}
-                  onChange={(e) => setTourName(e.target.value)}
+                  onChange={(e) => handleSelectTour(e.target.value)}
                   className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none cursor-pointer focus:border-orange-500 focus:bg-white ${
                     glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                   }`}
                 >
                   <option value="">Select Tour</option>
-                  {TOUR_OPTIONS.map((t, idx) => (
+                  {tourOptions.map((t, idx) => (
                     <option key={idx} value={t}>{t}</option>
                   ))}
-                  {tourName && !TOUR_OPTIONS.includes(tourName) && (
+                  {tourName && !tourOptions.includes(tourName) && (
                     <option value={tourName}>{tourName}</option>
                   )}
                 </select>
@@ -508,6 +547,7 @@ export default function AddBookingView({
                   }`}
                 >
                   <option value="Confirmed">Confirmed</option>
+                  <option value="Modified">Modified</option>
                   <option value="Pending">Pending</option>
                   <option value="Cancelled">Cancelled</option>
                 </select>
@@ -532,6 +572,9 @@ export default function AddBookingView({
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Full Travelers Manifest (Names with brackets: Adult/Child)
                 </label>
+                <p className="text-[11px] text-slate-400 font-medium -mt-1">
+                  Viator only provides the lead passenger. Replace placeholders like <span className="font-mono text-orange-600">Guest 2 (Adult)</span> / <span className="font-mono text-orange-600">Child 1 (Child)</span> with the real passport names — one per line.
+                </p>
                 <textarea
                   value={travelersText}
                   onChange={(e) => setTravelersText(e.target.value)}

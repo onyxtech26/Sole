@@ -4,8 +4,10 @@ import { GuideProfile } from '../types';
 import { SEED_GUIDES } from '../utils/seed';
 import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
+import { writeStore } from '../utils/storage';
+import { uploadMedia } from '../lib/storageUpload';
 
-const GUIDES_STORAGE_KEY = 'sole_guides';
+export const GUIDES_STORAGE_KEY = 'sole_guides';
 
 export default function GuidesView() {
   const [guides, setGuides] = useState<GuideProfile[]>([]);
@@ -46,7 +48,8 @@ export default function GuidesView() {
 
   const saveGuides = (list: GuideProfile[]) => {
     setGuides(list);
-    localStorage.setItem(GUIDES_STORAGE_KEY, JSON.stringify(list));
+    // writeStore broadcasts so the booking form / schedule board pick up changes live.
+    writeStore(GUIDES_STORAGE_KEY, list);
   };
 
   const handleOpenAddModal = (role: GuideProfile['role'] = 'Guide') => {
@@ -495,9 +498,15 @@ export default function GuidesView() {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (file) {
+                            if (!file) return;
+                            try {
+                              // Store the avatar in the Supabase media bucket and keep only its URL.
+                              const url = await uploadMedia(file, 'guides');
+                              setNewImage(url);
+                            } catch {
+                              // Fallback to an inline data URL if the upload fails.
                               const reader = new FileReader();
                               reader.onload = (ev) => {
                                 const base64 = ev.target?.result as string;

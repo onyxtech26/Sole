@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, ChevronUp, ChevronDown, Edit, Trash2, ShieldAlert, Plus, X, Calendar, Clock } from 'lucide-react';
 import { Booking, User } from '../types';
 import { getRelativeDateString } from '../utils/seed';
+import { isPlaceholderName } from '../utils/viatorImport';
 import { motion, AnimatePresence } from 'motion/react';
 import AddBookingView from './AddBookingView';
 import { createPortal } from 'react-dom';
@@ -163,6 +164,7 @@ export default function BookingsView({
           >
             <option value="all" className="text-slate-800 bg-white font-semibold">All Statuses</option>
             <option value="Confirmed" className="text-slate-800 bg-white font-semibold">Confirmed</option>
+            <option value="Modified" className="text-slate-800 bg-white font-semibold">Modified</option>
             <option value="Pending" className="text-slate-800 bg-white font-semibold">Pending</option>
             <option value="Cancelled" className="text-slate-800 bg-white font-semibold">Cancelled</option>
           </select>
@@ -241,7 +243,7 @@ export default function BookingsView({
                     Phone {renderSortArrow('phone')}
                   </div>
                 </th>
-                {currentUser.role !== 'staff' && (
+                {currentUser.role === 'manager' && (
                   <th onClick={() => handleSort('amount')} className="p-4 cursor-pointer hover:text-slate-800 transition whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-1.5">
                       Payout {renderSortArrow('amount')}
@@ -259,7 +261,7 @@ export default function BookingsView({
             <tbody className="divide-y divide-slate-100">
               {filteredBookings.length === 0 ? (
                 <tr>
-                  <td colSpan={currentUser.role === 'staff' ? 9 : 10} className="p-12 text-center">
+                  <td colSpan={currentUser.role !== 'manager' ? 9 : 10} className="p-12 text-center">
                     <div className="flex flex-col items-center justify-center gap-3 text-slate-500 max-w-sm mx-auto">
                       <ShieldAlert className="w-10 h-10 text-slate-300" />
                       <h4 className="font-extrabold text-slate-800">No Bookings Found</h4>
@@ -278,10 +280,16 @@ export default function BookingsView({
 
                     <td className="p-4">
                       <div className="font-extrabold text-slate-800">{b.leadTraveler}</div>
+                      {(b.paxCount.adults + b.paxCount.children) > 1 &&
+                        (b.namesComplete === false || b.travelers.some(isPlaceholderName)) && (
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[9px] font-extrabold text-amber-600 uppercase tracking-wide">
+                          ⚠ Names pending
+                        </span>
+                      )}
                       {b.travelers && b.travelers.length > 0 && (
                         <ul className="mt-1 space-y-0.5">
                           {b.travelers.map((t, index) => (
-                            <li key={index} className="text-[10px] text-slate-500 font-semibold">• {t}</li>
+                            <li key={index} className={`text-[10px] font-semibold ${isPlaceholderName(t) ? 'text-amber-500 italic' : 'text-slate-500'}`}>• {t}</li>
                           ))}
                         </ul>
                       )}
@@ -320,7 +328,7 @@ export default function BookingsView({
                       {b.phone || 'N/A'}
                     </td>
 
-                    {currentUser.role !== 'staff' && (
+                    {currentUser.role === 'manager' && (
                       <td className="p-4 text-center whitespace-nowrap font-mono font-extrabold text-slate-800">
                         €{b.amount.toFixed(2)}
                       </td>
@@ -333,11 +341,13 @@ export default function BookingsView({
                           onChange={(e) => onUpdateBookingStatus(b.bookingRef, e.target.value as Booking['status'])}
                           className={`w-full text-center text-[10px] font-extrabold uppercase tracking-wide border px-2.5 py-1.5 rounded-full bg-white/80 cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-500/10 ${
                             b.status === 'Confirmed' ? 'border-emerald-200 text-emerald-600 bg-emerald-50/50' :
+                            b.status === 'Modified' ? 'border-indigo-200 text-indigo-600 bg-indigo-50/50' :
                             b.status === 'Pending' ? 'border-orange-200 text-orange-600 bg-orange-50/50' :
                             'border-rose-200 text-rose-600 bg-rose-50/50'
                           }`}
                         >
                           <option value="Confirmed" className="bg-white text-emerald-600 font-bold">Confirmed</option>
+                          <option value="Modified" className="bg-white text-indigo-600 font-bold">Modified</option>
                           <option value="Pending" className="bg-white text-orange-600 font-bold">Pending</option>
                           <option value="Cancelled" className="bg-white text-rose-600 font-bold">Cancelled</option>
                         </select>

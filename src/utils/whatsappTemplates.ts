@@ -1,6 +1,8 @@
 // Editable WhatsApp message templates, persisted to localStorage so the team
 // can create / edit / delete them from the Template Manager without code changes.
 
+import { readStore, writeStore } from './storage';
+
 export interface WhatsappTemplate {
   id: string;
   title: string;
@@ -57,20 +59,14 @@ export const DEFAULT_WHATSAPP_TEMPLATES: WhatsappTemplate[] = [
 ];
 
 export function loadWhatsappTemplates(): WhatsappTemplate[] {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    } catch {
-      /* fall through to defaults */
-    }
-  }
-  return DEFAULT_WHATSAPP_TEMPLATES;
+  // readStore returns the hydrated Supabase cache when available.
+  const list = readStore<WhatsappTemplate[]>(STORAGE_KEY, DEFAULT_WHATSAPP_TEMPLATES);
+  return Array.isArray(list) && list.length > 0 ? list : DEFAULT_WHATSAPP_TEMPLATES;
 }
 
 export function saveWhatsappTemplates(list: WhatsappTemplate[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  // writeStore persists to Supabase (and broadcasts to other tabs/views).
+  writeStore(STORAGE_KEY, list);
 }
 
 // Fill {placeholders} in a template body from a booking-like object.

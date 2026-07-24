@@ -4,6 +4,7 @@ import { Customer } from '../types';
 import { SEED_CUSTOMERS } from '../utils/seed';
 import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
+import { writeStore } from '../utils/storage';
 
 const CUSTOMERS_STORAGE_KEY = 'sole_customers';
 
@@ -34,13 +35,13 @@ export default function CustomersView() {
       }
     } else {
       setCustomers(SEED_CUSTOMERS);
-      localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(SEED_CUSTOMERS));
+      writeStore(CUSTOMERS_STORAGE_KEY, SEED_CUSTOMERS);
     }
   }, []);
 
   const saveCustomers = (list: Customer[]) => {
     setCustomers(list);
-    localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(list));
+    writeStore(CUSTOMERS_STORAGE_KEY, list);
   };
 
   const handleAddCustomer = (e: React.FormEvent) => {
@@ -48,7 +49,7 @@ export default function CustomersView() {
     if (!newCustomerName || !newCustomerEmail) return;
 
     const newCust: Customer = {
-      id: `C-${800 + customers.length + 1}`,
+      id: `C-${crypto.randomUUID().slice(0, 8)}`,
       name: newCustomerName,
       email: newCustomerEmail,
       phone: newCustomerPhone,
