@@ -1,0 +1,511 @@
+import { useMemo, useState, type DragEvent } from 'react';
+import { Icon } from '../ui/Icon';
+import {
+  Btn, C, Empty, Hov, Input, MONO, Section, SectionHead, Select, useToast,
+} from '../ui/kit';
+import { commit } from '../lib/store';
+import { delayOf, short, shiftTime, uid } from '../utils/dates';
+import {
+  assignedIds, autoGroup, capOf, moveTraveler, productName,
+  syncBookingsToGroups, travelerRows, type TravelerRow,
+} from '../utils/selectors';
+import { isPlaceholderName } from '../utils/viator';
+import { download, manifestCsv } from '../utils/exports';
+import { RollingNumber } from '../ui/RollingNumber';
+import { manifestBands } from '../utils/selectors';
+import type { TourGroup } from '../types';
+import type { ViewProps } from './types';
+
+export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
+  const toast = useToast();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overGroup, setOverGroup] = useState<string | null>(null);
+  const [radarOpen, setRadarOpen] = useState(true);
+
+  const rows = useMemo(
+    () => travelerRows(store.bookings, rangeValue),
+    [store.bookings, rangeValue],
+  );
+  const assigned = useMemo(() => assignedIds(store.groups), [store.groups]);
+  const unassigned = rows.filter(r => !assigned[r.id]);
+
+  const bands = useMemo(
+    () => store.groups
+      .filter(g => g.date >= rangeValue[0] && g.date <= rangeValue[1])
+      .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)),
+    [store.groups, rangeValue],
+  );
+
+  const rowById = useMemo(() => {
+    const m = new Map<string, TravelerRow>();
+    for (const r of rows) m.set(r.id, r);
+    return m;
+  }, [rows]);
+
+  /* ── writes ── */
+  const applyGroups = (groups: TourGroup[]) => {
+    const bookings = syncBookingsToGroups(store.bookings, groups, store.groups);
+    commit({ groups, bookings });
+  };
+
+  const drop = (groupId: string | null) => {
+    if (!dragId) return;
+    applyGroups(moveTraveler(store.groups, dragId, groupId));
+    setDragId(null);
+    setOverGroup(null);
+  };
+
+  const patchGroup = (id: string, patch: Partial<TourGroup>) => {
+    applyGroups(store.groups.map(g => (g.id === id ? { ...g, ...patch } : g)));
+  };
+
+  const addGroup = () => {
+    const first = store.products[0];
+    const g: TourGroup = {
+      id: uid('grp'),
+      date: rangeValue[0],
+      code: first?.code ?? '',
+      tg: first?.options[0]?.tg ?? 'TG1',
+      time: '09:00',
+      ticketTime: '08:30',
+      ticketStatus: 'Pending',
+      guide: '',
+      cap: first?.options[0]?.cap ?? 7,
+      notes: '',
+      members: [],
+      tourName: first?.label ?? '',
+    };
+    applyGroups([...store.groups, g]);
+    toast('Group added');
+  };
+
+  const runAutoGroup = () => {
+    const { groups, placed } = autoGroup(store, rangeValue);
+    if (!placed) {
+      toast('Everyone in this period is already grouped.', 'warn');
+      return;
+    }
+    applyGroups(groups);
+    toast(`Auto-grouped ${placed} passenger${placed === 1 ? '' : 's'}`);
+  };
+
+  const exportManifest = () => {
+    // One manifest per distinct service day in the period, concatenated.
+    const days = [...new Set(bands.map(g => g.date))].sort();
+    const rowsOut = days.flatMap(d => manifestBands(store, d));
+    if (!rowsOut.length) {
+      toast('Nothing to export — no band has both a time and a guide.', 'warn');
+      return;
+    }
+    download(`sole-manifest-${rangeValue[0]}.csv`, manifestCsv(rowsOut));
+    toast(`Manifest exported · ${days.length} day${days.length === 1 ? '' : 's'}`);
+  };
+
+  /* ── nominative gate radar ── */
+  const radar = useMemo(() => store.bookings
+    .filter(b =>
+      b.date >= rangeValue[0] && b.date <= rangeValue[1] &&
+      b.status !== 'Cancelled' && !b.namesLocked &&
+      b.travelers.some(t => isPlaceholderName(t[0])))
+    .slice(0, 6), [store.bookings, rangeValue]);
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: C.body, fontWeight: 500 }}>
+          <RollingNumber value={bands.length} /> band{bands.length === 1 ? '' : 's'} ·{' '}
+          <RollingNumber value={unassigned.length} /> passenger
+          {unassigned.length === 1 ? '' : 's'} waiting
+        </span>
+        <div style={{ flex: 1 }} />
+        <Btn icon="sparkles" onClick={runAutoGroup}>Auto-group</Btn>
+        <Btn icon="plus" onClick={addGroup}>New group</Btn>
+        <Btn variant="primary" icon="printer" style={{ padding: '6px 11px', fontSize: 12 }} onClick={exportManifest}>
+          Export manifest
+        </Btn>
+      </div>
+
+      {/* ── nominative gate radar ── */}
+      {radarOpen && radar.length > 0 && (
+        <section className="up-sm" style={{
+          background: C.panel, border: `1px solid ${C.badLine}`, borderRadius: 8, overflow: 'hidden',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px',
+            background: '#fdf4f6', borderBottom: '1px solid #f6dbe1',
+          }}>
+            <Icon name="info" size={13} color={C.bad} />
+            <h2 style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: C.bad }}>
+              Nominative gate radar
+            </h2>
+            <span style={{ fontSize: 11.5, color: '#a8566d' }}>
+              {radar.length} booking{radar.length === 1 ? '' : 's'} still on placeholder names
+            </span>
+            <div style={{ flex: 1 }} />
+            <Hov
+              as="button"
+              type="button"
+              onClick={() => setRadarOpen(false)}
+              style={{
+                border: 0, background: 'transparent', fontSize: 11, fontWeight: 600,
+                color: '#a8566d', cursor: 'pointer', padding: '2px 4px',
+              }}
+              hover={{ color: C.bad }}
+            >
+              Dismiss
+            </Hov>
+          </div>
+
+          {radar.map(b => {
+            const pending = b.travelers.filter(t => isPlaceholderName(t[0])).length;
+            return (
+              <Hov
+                key={b.ref}
+                as="div"
+                className="row"
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10, padding: '9px 14px',
+                  borderBottom: '1px solid #f7f8fa',
+                }}
+                hover={{ background: C.wash }}
+              >
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.accentInk }}>{b.ref}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{b.travelers[0]?.[0]}</span>
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, letterSpacing: '.05em',
+                      textTransform: 'uppercase', padding: '1px 6px', borderRadius: 4,
+                      background: C.warnBg, color: C.warn,
+                    }}>
+                      {short(b.date)}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 11.5, color: C.muted2, lineHeight: 1.5, textWrap: 'pretty' }}>
+                    {pending} of {b.travelers.length} passengers are still placeholders. Tickets are
+                    issued in the passengers’ names, so these have to be collected first.
+                  </span>
+                </div>
+              </Hov>
+            );
+          })}
+        </section>
+      )}
+
+      {/* ── unassigned queue ── */}
+      <Section
+        onDragOver={(e: DragEvent) => e.preventDefault()}
+        onDrop={() => drop(null)}
+        style={{ borderColor: dragId ? C.accent : C.line }}
+      >
+        <SectionHead
+          title="Not yet grouped"
+          note={`${unassigned.length} passenger${unassigned.length === 1 ? '' : 's'}`}
+        >
+          <span style={{ fontSize: 10.5, color: C.muted }}>
+            Drag a passenger into a band below
+          </span>
+        </SectionHead>
+
+        {!unassigned.length && <Empty pad={22}>Everyone in this period is in a group.</Empty>}
+
+        {unassigned.length > 0 && (
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: 6, padding: 12,
+          }}>
+            {unassigned.map((r, i) => (
+              <div
+                key={r.id}
+                className={`grab up-sm ${dragId === r.id ? 'drag-ghost' : ''}`}
+                draggable
+                onDragStart={() => setDragId(r.id)}
+                onDragEnd={() => { setDragId(null); setOverGroup(null); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7, border: `1px solid ${C.line}`,
+                  background: C.wash, borderRadius: 6, padding: '5px 9px',
+                  animationDelay: delayOf(i),
+                }}
+              >
+                <span style={{
+                  fontSize: 9, fontWeight: 700, color: r.age === 'Child' ? C.warn : C.body,
+                  background: r.age === 'Child' ? C.warnBg : '#f0f2f5',
+                  borderRadius: 3, padding: '1px 4px',
+                }}>
+                  {r.age === 'Child' ? 'C' : 'A'}
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 500 }}>{r.name}</span>
+                <span style={{ fontFamily: MONO, fontSize: 9.5, color: C.faint }}>
+                  {short(r.booking.date)} {r.booking.resTime}
+                </span>
+                <span style={{ fontSize: 10.5, color: C.muted }}>
+                  {productName(store.products, r.booking)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {/* ── bands ── */}
+      {!bands.length && (
+        <Section>
+          <Empty>
+            No groups in this period yet. Use Auto-group to build them from the bookings, or add
+            one by hand.
+          </Empty>
+        </Section>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {bands.map((g, gi) => {
+          const members = g.members.map(m => rowById.get(m)).filter(Boolean) as TravelerRow[];
+          const over = overGroup === g.id;
+          const full = members.length >= g.cap;
+          const product = store.products.find(p => p.code === g.code);
+          return (
+            <Section
+              key={g.id}
+              className={`up ${over ? 'drop-live' : ''}`}
+              style={{ animationDelay: delayOf(gi) }}
+              onDragOver={(e: DragEvent) => { e.preventDefault(); setOverGroup(g.id); }}
+              onDragLeave={() => setOverGroup(o => (o === g.id ? null : o))}
+              onDrop={(e: DragEvent) => { e.preventDefault(); drop(g.id); }}
+            >
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px',
+                borderBottom: `1px solid ${C.lineSoft}`, background: C.wash, flexWrap: 'wrap',
+              }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, background: C.ink, color: '#fff',
+                  borderRadius: 4, padding: '2px 7px',
+                }}>
+                  G{gi + 1}
+                </span>
+                <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                  {product?.name || g.tourName || g.code || 'Unassigned tour'}
+                </span>
+                <span style={{ fontFamily: MONO, fontSize: 10, color: C.faint }}>
+                  {g.tg} · {short(g.date)}
+                </span>
+
+                <div style={{ flex: 1 }} />
+
+                <span style={{
+                  fontSize: 11, fontWeight: 600, borderRadius: 11, padding: '1px 8px',
+                  background: full ? C.badBg : C.goodBg, color: full ? C.bad : C.good,
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
+                  {/* Capacity changes as passengers are dragged in and out, so
+                      the fill counts rather than flickering to a new figure. */}
+                  <RollingNumber value={members.length} animateOnMount={false} duration={380} />
+                  /{g.cap}
+                </span>
+
+                <Hov
+                  as="button"
+                  type="button"
+                  title="Delete group"
+                  onClick={() => setConfirm({
+                    title: 'Delete this group?',
+                    body: 'Its passengers go back to the ungrouped queue and the bookings lose their assigned guide and tour time.',
+                    confirmLabel: 'Delete group',
+                    tone: 'danger',
+                    run: () => applyGroups(store.groups.filter(x => x.id !== g.id)),
+                  })}
+                  style={{
+                    width: 24, height: 24, border: `1px solid ${C.line}`, background: C.panel,
+                    borderRadius: 5, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', cursor: 'pointer', color: C.faint, padding: 0,
+                  }}
+                  hover={{ borderColor: '#e0a3b3', color: C.bad }}
+                >
+                  <Icon name="trash" size={12} />
+                </Hov>
+              </div>
+
+              <div style={{
+                display: 'flex', gap: 10, padding: '10px 14px', flexWrap: 'wrap',
+                borderBottom: `1px solid ${C.lineSoft}`,
+              }}>
+                <BandField label="Tour">
+                  <Select
+                    value={g.code}
+                    onChange={(e: any) => {
+                      const p = store.products.find(x => x.code === e.target.value);
+                      patchGroup(g.id, {
+                        code: e.target.value,
+                        tg: p?.options[0]?.tg ?? g.tg,
+                        cap: p?.options[0]?.cap ?? g.cap,
+                        tourName: p?.label ?? '',
+                      });
+                    }}
+                    options={store.products.map(p => ({ v: p.code, t: p.name }))}
+                    style={{ background: C.panel, width: 168 }}
+                  />
+                </BandField>
+
+                <BandField label="Option">
+                  <Select
+                    value={g.tg}
+                    onChange={(e: any) => patchGroup(g.id, {
+                      tg: e.target.value,
+                      cap: capOf(store.products, g.code, e.target.value),
+                    })}
+                    options={
+                      product?.options.length
+                        ? product.options.map(o => ({ v: o.tg, t: `${o.tg} · ${o.title}` }))
+                        : [{ v: g.tg, t: g.tg }]
+                    }
+                    style={{ background: C.panel, width: 168 }}
+                  />
+                </BandField>
+
+                <BandField label="Date">
+                  <Input
+                    type="date"
+                    value={g.date}
+                    onChange={(e: any) => patchGroup(g.id, { date: e.target.value })}
+                    style={{ background: C.panel, width: 132 }}
+                  />
+                </BandField>
+
+                <BandField label="Departs">
+                  <Input
+                    type="time"
+                    value={g.time}
+                    onChange={(e: any) => patchGroup(g.id, {
+                      time: e.target.value,
+                      ticketTime: e.target.value ? shiftTime(e.target.value, -30) : '',
+                    })}
+                    style={{ background: C.panel, width: 96 }}
+                  />
+                </BandField>
+
+                <BandField label="Tickets">
+                  <Input
+                    type="time"
+                    value={g.ticketTime}
+                    onChange={(e: any) => patchGroup(g.id, { ticketTime: e.target.value })}
+                    style={{ background: C.panel, width: 96 }}
+                  />
+                </BandField>
+
+                <BandField label="Ticket status">
+                  <Select
+                    value={g.ticketStatus}
+                    onChange={(e: any) => patchGroup(g.id, { ticketStatus: e.target.value })}
+                    options={['Pending', 'Reserved', 'Issued', 'Not needed'].map(s => ({ v: s, t: s }))}
+                    style={{ background: C.panel, width: 124 }}
+                  />
+                </BandField>
+
+                <BandField label="Guide">
+                  <Select
+                    value={g.guide}
+                    onChange={(e: any) => patchGroup(g.id, { guide: e.target.value })}
+                    options={[
+                      { v: '', t: 'No guide yet' },
+                      ...store.guides.map(x => ({ v: x.name, t: x.name })),
+                      ...store.staff.map(x => ({ v: x.name, t: `${x.name} (staff)` })),
+                    ]}
+                    style={{ background: C.panel, width: 152 }}
+                  />
+                </BandField>
+
+                <BandField label="Capacity">
+                  <Input
+                    type="number"
+                    min={1}
+                    value={String(g.cap)}
+                    onChange={(e: any) => patchGroup(g.id, { cap: Number(e.target.value) || 1 })}
+                    style={{ background: C.panel, width: 74 }}
+                  />
+                </BandField>
+
+                <BandField label="Notes" grow>
+                  <Input
+                    value={g.notes}
+                    onChange={(e: any) => patchGroup(g.id, { notes: e.target.value })}
+                    placeholder="Meeting point, radios, anything the guide needs"
+                    style={{ background: C.panel }}
+                  />
+                </BandField>
+              </div>
+
+              {!members.length && (
+                <Empty pad={20}>
+                  Empty band — drag passengers here, or run Auto-group.
+                </Empty>
+              )}
+
+              {members.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: 12 }}>
+                  {members.map(m => (
+                    <div
+                      key={m.id}
+                      className={`grab ${dragId === m.id ? 'drag-ghost' : ''}`}
+                      draggable
+                      onDragStart={() => setDragId(m.id)}
+                      onDragEnd={() => { setDragId(null); setOverGroup(null); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 7,
+                        border: `1px solid ${C.line}`, background: C.panel,
+                        borderRadius: 6, padding: '5px 9px',
+                      }}
+                    >
+                      <span style={{
+                        fontSize: 9, fontWeight: 700,
+                        color: m.age === 'Child' ? C.warn : C.body,
+                        background: m.age === 'Child' ? C.warnBg : '#f0f2f5',
+                        borderRadius: 3, padding: '1px 4px',
+                      }}>
+                        {m.age === 'Child' ? 'C' : 'A'}
+                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 500 }}>{m.name}</span>
+                      <span style={{ fontFamily: MONO, fontSize: 9.5, color: C.faint }}>
+                        {m.booking.ref.slice(-6)}
+                      </span>
+                      <Hov
+                        as="button"
+                        type="button"
+                        title="Remove from this group"
+                        onClick={() => applyGroups(moveTraveler(store.groups, m.id, null))}
+                        style={{
+                          width: 16, height: 16, border: 0, background: 'transparent',
+                          borderRadius: 3, display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', cursor: 'pointer', color: '#c9ced7', padding: 0,
+                        }}
+                        hover={{ color: C.bad, background: C.badBg }}
+                      >
+                        <Icon name="x" size={10} width={2.6} />
+                      </Hov>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function BandField({
+  label, children, grow,
+}: { label: string; children: React.ReactNode; grow?: boolean }) {
+  return (
+    <label style={{
+      display: 'flex', flexDirection: 'column', gap: 4,
+      flex: grow ? 1 : undefined, minWidth: grow ? 200 : undefined,
+    }}>
+      <span style={{
+        fontSize: 9, fontWeight: 600, letterSpacing: '.08em',
+        textTransform: 'uppercase', color: C.muted3,
+      }}>
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}

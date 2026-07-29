@@ -1,45 +1,78 @@
 import { supabase } from './supabaseClient';
 import { AUTH_EMAIL_DOMAIN } from './config';
-import { User } from '../types';
+import type { Role, User } from '../types';
 
-// Simple usernames (sina / masoud / tina) are bridged to Supabase Auth accounts
-// via an internal email address. Operators only ever type their username.
+/* Operators type a bare username (sina / masoud / tina). Supabase Auth wants an
+   email, so we bridge through an internal domain. Anyone who types a full
+   address is taken at their word. */
 export function usernameToEmail(username: string): string {
   const u = username.trim().toLowerCase();
   return u.includes('@') ? u : `${u}@${AUTH_EMAIL_DOMAIN}`;
 }
 
-async function loadProfile(userId: string): Promise<{ username: string; role: User['role']; fullName: string } | null> {
+const ROLE_LABEL: Record<Role, string> = {
+  manager: 'Manager',
+  operations: 'Operations',
+  guide: 'Guide',
+};
+
+/** Prefer the job title recorded in the team directory over the generic role. */
+async function jobTitleFor(fullName: string): Promise<string> {
+  if (!fullName) return '';
+  const { data } = await supabase
+    .from('guides')
+    .select('job_title')
+    .eq('name', fullName)
+    .limit(1)
+    .maybeSingle();
+  return (data?.job_title as string) || '';
+}
+
+async function toUser(id: string): Promise<User | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select('username, full_name, role')
-    .eq('id', userId)
+    .eq('id', id)
     .single();
   if (error || !data) return null;
-  return { username: data.username, role: data.role as User['role'], fullName: data.full_name };
+
+  const role = (data.role || 'operations') as Role;
+  const name = (data.full_name as string) || (data.username as string) || 'User';
+  const title = await jobTitleFor(name);
+
+  return {
+    id,
+    username: data.username as string,
+    name,
+    initial: name.charAt(0).toUpperCase() || '?',
+    role,
+    roleLabel: title || ROLE_LABEL[role] || 'Operations',
+  };
 }
 
-/** Resolve the currently-authenticated user (session + profile) or null. */
+/** The signed-in user restored from a persisted session, or null. */
 export async function getCurrentUser(): Promise<User | null> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null;
-  const profile = await loadProfile(session.user.id);
-  if (!profile) return null;
-  return { id: session.user.id, username: profile.fullName || profile.username, role: profile.role, fullName: profile.fullName };
+  return toUser(session.user.id);
 }
 
-/** Sign in with username + password. Returns the User on success or an error string. */
-export async function signIn(username: string, password: string): Promise<{ user?: User; error?: string }> {
+export async function signIn(
+  username: string,
+  password: string,
+): Promise<{ user?: User; error?: string }> {
   const email = usernameToEmail(username);
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
   if (error || !data.user) {
+    // Deliberately vague: never reveal which half of the pair was wrong.
     return { error: 'Incorrect username or password.' };
   }
-  const profile = await loadProfile(data.user.id);
-  if (!profile) {
+  const user = await toUser(data.user.id);
+  if (!user) {
     return { error: 'No profile is linked to this account. Contact an administrator.' };
   }
-  return { user: { id: data.user.id, username: profile.fullName || profile.username, role: profile.role, fullName: profile.fullName } };
+  return { user };
 }
 
 export async function signOut(): Promise<void> {

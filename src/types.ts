@@ -1,54 +1,162 @@
-export interface PaxCount {
-  adults: number;
-  children: number;
-}
+/* ══════════════════════════════════════════════════════════════════════════
+   Domain model.
 
-export interface Booking {
-  bookingRef: string;
-  tourName: string;
-  productCode: string;
-  travelDate: string; // YYYY-MM-DD
-  tourTime: string; // HH:MM
-  leadTraveler: string;
-  travelers: string[];
-  paxCount: PaxCount;
-  phone: string;
-  language: string;
-  meetingPoint: string;
-  amount: number;
-  currency: string;
-  status: 'Confirmed' | 'Modified' | 'Pending' | 'Cancelled';
-  paymentStatus: 'Paid' | 'Partially Paid' | 'Unpaid' | 'Refunded';
-  assignedGuide: string;
-  assignedDriver: string;
-  okStatus: boolean;
-  checkedInGuests: number[]; // indices of travelers checked in
-  serviceLineItems?: { description: string; qty: number; unitPrice: number; total: number }[];
-  notes?: string;
-  namesLocked?: boolean; // passport names verified & locked for ticket issuance
-  namesComplete?: boolean; // all traveller names filled in manually (no placeholders left)
-  tourGradeCode?: string; // e.g. "TG4" (Viator "Codice livello del tour")
-  tourGradeTitle?: string; // e.g. "Semi Private (max 7 people) 14:00"
-  source?: 'manual' | 'viator_import';
-}
+   These shapes are the ones the *design* speaks: short language codes, a
+   traveller as a [name, type] pair, a four-step message workflow. The Supabase
+   tables speak a slightly different dialect (full language names, travellers as
+   "Name (Adult)" strings). lib/entities.ts is the only place that translates,
+   so every screen below it works in one vocabulary.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+export type Role = 'manager' | 'operations' | 'guide';
 
 export interface User {
-  username: string;
-  role: 'manager' | 'operations' | 'staff' | 'guide';
-  fullName?: string;
-  id?: string;
+  id: string;
+  username: string;   // login handle, e.g. "tina"
+  name: string;       // display name, e.g. "Tina"
+  initial: string;
+  role: Role;
+  roleLabel: string;  // "Owner" / "Operations" / "Reservations" / "Guide"
 }
 
-export interface GuideProfile {
+export type TravelerType = 'Adult' | 'Child';
+/** [full name, adult or child] — index-aligned with the DB `travelers` array. */
+export type Traveler = [string, TravelerType];
+
+export type BookingStatus = 'Confirmed' | 'Modified' | 'Pending' | 'Cancelled';
+/** UI wording. Mapped to the DB's 'Partially Paid' on write. */
+export type PaymentStatus = 'Paid' | 'Partly paid' | 'Unpaid' | 'Refunded';
+
+export interface Booking {
+  ref: string;
+  code: string;            // product code
+  tg: string;              // tour grade code, e.g. TG1
+  date: string;            // YYYY-MM-DD
+  resTime: string;         // time the traveller booked
+  tourTime: string;        // time operations actually runs it
+  lang: string;            // short code: EN / IT / ES …
+  guide: string;           // assigned guide name ('' = unassigned)
+  phone: string;
+  travelers: Traveler[];
+  gross: number;           // revenue
+  spent: number;           // direct cost
+  wf: number[];            // [names, confirmed, time sent, review] as 0/1
+  status: BookingStatus;
+  payment: PaymentStatus;
+  notes: string;
+  namesLocked: boolean;
+  source: 'manual' | 'viator_import';
+
+  /* Columns the previous build owns. Carried through untouched so writing a
+     booking here never blanks a field the other app depends on. */
+  tourName: string;
+  tgTitle: string;
+  meetingPoint: string;
+  currency: string;
+  leadTraveler: string;
+  assignedDriver: string;
+  okStatus: boolean;
+  checkedIn: number[];
+  namesComplete: boolean;
+  serviceLineItems: ServiceLineItem[] | null;
+}
+
+export interface ServiceLineItem {
+  description: string;
+  qty: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface ProductOption {
+  tg: string;      // grade code
+  title: string;
+  cap: number;
+}
+
+export interface Product {
+  code: string;
+  name: string;    // short internal name
+  label: string;   // full public title
+  defaultCap: number;
+  options: ProductOption[];
+}
+
+export interface Guide {
   id: string;
   name: string;
-  role: 'Guide' | 'Staff';
   phone: string;
-  languages: string[];
-  skills: string[];
-  performanceRating: number; // 1-5 stars
-  availability: 'Active' | 'On Break' | 'Unavailable';
+  langs: string;      // display string, "EN · IT"
+  skills: string;     // display string, comma separated
+  rating: number;
+  avail: 'Active' | 'On break' | 'Unavailable';
   image: string;
+}
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  role: string;       // job title, e.g. "Operations"
+  phone: string;
+  duties: string;
+  image: string;
+
+  /* Guides and office staff share one table. These columns belong to the guide
+     shape but exist on every row, so they ride along untouched — writing a
+     staff member must not blank a colleague's languages or rating. */
+  langs: string;
+  rating: number;
+  avail: Guide['avail'];
+}
+
+export interface TourGroup {
+  id: string;
+  date: string;
+  code: string;
+  tg: string;
+  time: string;
+  ticketTime: string;
+  ticketStatus: string;
+  guide: string;
+  cap: number;
+  notes: string;
+  members: string[];   // "BOOKINGREF#travellerIndex"
+  tourName: string;
+}
+
+export type ExpenseCategory = 'Guide' | 'Ticket' | 'Radio' | 'Staff Salary' | 'Other';
+
+export interface Expense {
+  id: string;
+  cat: ExpenseCategory;
+  customCat: string;
+  amount: number;
+  date: string;
+  desc: string;
+  status: 'Approved' | 'Pending';
+  receiptUrl: string;
+}
+
+export interface Template {
+  id: string;
+  stage: number;
+  name: string;
+  when: string;
+  en: string;
+  es: string;
+  it: string;
+}
+
+export interface CustomerDoc {
+  name: string;
+  type: string;
+  url?: string;
+}
+
+export interface JourneyEntry {
+  date: string;
+  title: string;
+  description: string;
 }
 
 export interface Customer {
@@ -57,50 +165,45 @@ export interface Customer {
   email: string;
   phone: string;
   country: string;
-  travelHistoryCount: number;
+  trips: number;
   preferences: string[];
-  documents: { name: string; type: string; url?: string }[];
+  documents: CustomerDoc[];
   notes: string;
-  journey: { date: string; title: string; description: string }[];
+  journey: JourneyEntry[];
 }
 
-export interface Invoice {
-  invoiceNo: string;
-  bookingRef: string;
-  issueDate: string;
-  dueDate: string;
-  subtotal: number;
-  tax: number;
-  total: number;
-  status: 'Paid' | 'Unpaid' | 'Overdue';
-}
-
-export type ExpenseCategory = 'Guide' | 'Ticket' | 'Radio' | 'Staff Salary' | 'Other';
-
-export interface Expense {
+/**
+ * One Viator export upload. Written once per import and never edited, so the
+ * team shares a single audit trail of what was uploaded, by whom, and what it
+ * actually changed.
+ */
+export interface ImportBatch {
   id: string;
-  category: ExpenseCategory;
-  amount: number;
-  date: string;
-  description: string;
-  status: 'Approved' | 'Pending';
-  receiptUrl?: string;
-  customCategory?: string;
+  fileName: string;
+  fileSize: number;      // bytes
+  importedAt: string;    // ISO timestamp
+  importedBy: string;    // auth user id ('' when unknown)
+  importedByName: string;
+  rowsTotal: number;     // rows in the file
+  rowsAdded: number;
+  rowsUpdated: number;
+  rowsUnchanged: number;
+  rowsCancelled: number; // Cancellata rows skipped
+  rowsInvalid: number;   // no reference or no travel date
+  source: string;
 }
 
-export interface AuditLog {
-  id: string;
-  action: string;
-  timestamp: string;
-  user: string;
-  bookingRef: string;
+/** Everything the hybrid store keeps in sync with Supabase. */
+export interface StoreData {
+  bookings: Booking[];
+  products: Product[];
+  guides: Guide[];
+  staff: StaffMember[];
+  groups: TourGroup[];
+  expenses: Expense[];
+  templates: Template[];
+  customers: Customer[];
+  imports: ImportBatch[];
 }
 
-export interface Notification {
-  id: string;
-  title: string;
-  description: string;
-  timestamp: string;
-  category: 'Booking' | 'Payment' | 'Alert' | 'System';
-  isRead: boolean;
-}
+export type StoreKey = keyof StoreData;

@@ -1,251 +1,268 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
-@import "tailwindcss";
+/* ══════════════════════════════════════════════════════════════════════════
+   SOLE — global stylesheet.
 
-@theme {
-  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-serif: "Playfair Display", Georgia, serif;
-  
-  --color-theme-bg: var(--bg-primary);
-  --color-theme-panel: var(--bg-panel);
-  --color-theme-text: var(--text-primary);
-  --color-theme-muted: var(--text-secondary);
-  --color-theme-accent: var(--color-accent);
-  --color-theme-accent-glow: var(--color-accent-glow);
-  --color-theme-accent-border: var(--color-accent-border);
-  --color-theme-border: var(--border-primary);
-  --color-theme-gradient-start: var(--gradient-start);
-  --color-theme-gradient-end: var(--gradient-end);
+   Ported verbatim from the approved design handoff (design/SOLE.dc.html) and
+   then extended. The colour tokens, radii, type scale and spacing are exactly
+   the handoff's; everything added below is *movement* — ramps, easings and
+   hover states — plus the few rules that inline styles cannot express
+   (media queries, pseudo-classes, keyframes, print).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── design tokens ──────────────────────────────────────────────────────── */
+:root {
+  --ink: #0b1220;          /* near-black brand surface + primary text        */
+  --paper: #f6f7f9;        /* app background                                 */
+  --panel: #fff;           /* cards, header, table surfaces                  */
+  --line: #e5e8ed;         /* hairline borders                               */
+  --line-soft: #eef0f4;    /* inner dividers                                 */
+  --muted: #8a919e;        /* secondary text                                 */
+  --muted-soft: #98a0ac;   /* tertiary text, icon strokes                    */
+  --faint: #b9bfc8;        /* placeholder / disabled text                    */
+  --accent: #fd9707;       /* brand orange                                   */
+  --accent-deep: #b26100;  /* orange on light backgrounds (link text)        */
+  --good: #0f6b48;
+  --good-bg: #e8f5ef;
+  --warn: #8a5106;
+  --warn-bg: #fdf3e3;
+  --bad: #9c2743;
+  --bad-bg: #fdecef;
+  --info: #1f4e8c;
+  --info-bg: #eaf1fb;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);  /* the handoff's signature easing  */
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Base style resets */
 html, body {
-  background-color: var(--bg-primary, #020617);
-  color: var(--text-primary, #f8fafc);
-  font-family: var(--font-sans);
-  overflow-x: hidden;
-  min-height: 100vh;
-  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Outfit', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+}
+* { box-sizing: border-box; }
+#root { height: 100%; }
+
+/* Figures line up in every column without each call site remembering to ask. */
+input[type='number'], .mono, [data-num] { font-variant-numeric: tabular-nums; }
+
+/* Body copy breaks on sense rather than on width. */
+p { text-wrap: pretty; }
+
+::selection { background: rgba(253, 151, 7, 0.22); color: var(--ink); }
+
+a { color: var(--accent-deep); text-decoration: none; }
+a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+input, button, select, textarea { font-family: inherit; }
+input, textarea { caret-color: var(--accent); }
+input::placeholder, textarea::placeholder { color: var(--faint); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: #d3d7de;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  transition: background-color 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover { background: #b9bfc8; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Number inputs: no spinners — the design uses plain numeric fields. */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type='number'] { -moz-appearance: textfield; }
+
+/* ── responsive overrides — cannot be expressed inline ──────────────────── */
+@media (max-width: 1100px) {
+  [data-r='g4'] { grid-template-columns: repeat(2, 1fr) !important; }
+  [data-r='g3'] { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; }
+  [data-r='split'] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 820px) {
+  /* 100dvh, not 100vh: mobile browser chrome otherwise steals the last rows. */
+  [data-r='shell'] { flex-direction: column !important; height: 100dvh !important; }
+
+  /* Hover-to-expand is a pointer affordance and touch has no hover. The rail
+     becomes a scrollable horizontal bar with every label permanently shown. */
+  [data-r='side'] {
+    width: 100% !important; height: auto !important; flex-shrink: 0 !important;
+  }
+  [data-r='sidepanel'] {
+    position: static !important; width: 100% !important;
+    flex-direction: row !important; align-items: stretch !important;
+    box-shadow: none !important; overflow: visible !important;
+  }
+  .side-label { opacity: 1 !important; pointer-events: auto !important; }
+  [data-r='sidenav'] {
+    flex-direction: row !important; align-items: center !important;
+    padding: 8px !important; gap: 4px !important;
+    overflow-x: auto !important; overflow-y: hidden !important;
+    scrollbar-width: none;
+  }
+  [data-r='sidenav']::-webkit-scrollbar { display: none; }
+  .nav-item { width: auto !important; flex-shrink: 0 !important; padding: 8px 12px !important; }
+  [data-r='navgroup'] { display: none !important; }
+  [data-r='brand'] {
+    border-bottom: 0 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 0 12px !important;
+  }
+  /* Sign-out has to stay reachable on a phone — this was display:none before,
+     which stranded mobile users in the app with no way out. */
+  [data-r='sidefoot'] {
+    display: flex !important; align-items: center !important; flex-shrink: 0 !important;
+    border-top: 0 !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 8px !important;
+  }
+  [data-r='sidefoot'] p { display: none !important; }
+
+  [data-r='g3'], [data-r='g4'], [data-r='g2'] { grid-template-columns: 1fr !important; }
+  /* The bookings table drops its 1180px floor and hides its column header —
+     BookingsView swaps each row for a stacked card at this width. */
+  [data-r='tablewrap'] { min-width: 0 !important; }
+  [data-r='thead'] { display: none !important; }
+  [data-r='drawer'] { width: 100% !important; }
+  [data-r='scroll'] { overflow-x: auto !important; }
+  [data-r='pad'] { padding: 12px !important; }
+  [data-r='doc'] { padding: 18px 16px !important; }
+
+  /* Search is the fastest route to a booking; it used to be hidden outright.
+     Give it a full-width row of its own rather than deleting the feature. */
+  [data-r='topbar'] { flex-wrap: wrap !important; padding: 10px 12px !important; }
+  [data-r='search'] { order: 10 !important; width: 100% !important; }
+  [data-r='search'] input { width: 100% !important; }
 }
 
-/* Default Theme: Premium Light Glassmorphism (SOLE Custom) */
-:root, html {
-  --bg-primary: #e2e8f0; /* Rich grey background for sharp card contrast */
-  --bg-panel: #ffffff;   /* Pure solid white for all card containers */
-  --color-accent: #fd9707; /* SOLE Orange */
-  --color-accent-glow: rgba(253, 151, 7, 0.08);
-  --color-accent-border: rgba(253, 151, 7, 0.2);
-  --text-primary: #0b1220; /* SOLE Navy */
-  --text-secondary: #475569; /* Slate 600 */
-  --border-primary: rgba(11, 18, 32, 0.12);
-  --gradient-start: #0b1220; /* SOLE Navy */
-  --gradient-end: #fd9707; /* SOLE Orange */
+/* ── phones ─────────────────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  [data-r='pad'] { padding: 10px !important; }
+  [data-r='doc'] { padding: 14px 12px !important; }
+  /* Comfortable thumb targets, without touching desktop density. */
+  .nav-item { min-height: 38px; }
+  /* A toast pinned to one corner is easy to miss on a small screen. */
+  [data-r='toasts'] {
+    left: 10px !important; right: 10px !important; bottom: 10px !important;
+  }
+  [data-r='toasts'] > div { max-width: none !important; }
 }
 
-/* Custom Themes - Scoped by CSS classes on html element */
+/* ── motion ─────────────────────────────────────────────────────────────────
+   Movement only. No new colour, shadow or surface — the flat design tokens
+   are unchanged; these just give every state change a ramp.                 */
+@keyframes dcFade   { from { opacity: 0 } to { opacity: 1 } }
+@keyframes dcUp     { from { opacity: 0; transform: translateY(9px) } to { opacity: 1; transform: none } }
+@keyframes dcUpSm   { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+@keyframes dcPop    { from { opacity: 0; transform: translateY(10px) scale(.985) } to { opacity: 1; transform: none } }
+@keyframes dcRight  { from { opacity: 0; transform: translateX(22px) } to { opacity: 1; transform: none } }
+@keyframes dcDown   { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
+@keyframes dcSpin   { to { transform: rotate(360deg) } }
+@keyframes dcShake  { 10%,90% { transform: translateX(-1px) } 20%,80% { transform: translateX(2px) } 30%,50%,70% { transform: translateX(-3px) } 40%,60% { transform: translateX(3px) } }
+@keyframes dcBar    { from { width: 0 } }
+@keyframes dcSplash { 0% { opacity: 0; transform: scale(.94) } 60% { opacity: 1; transform: scale(1) } 100% { opacity: 1; transform: scale(1) } }
+@keyframes dcTrack  { from { width: 0 } to { width: 100% } }
+@keyframes dcBlink  { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+@keyframes dcCount  { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
 
-/* Obsidian Gold */
-html.theme-obsidian {
-  --bg-primary: #030712;
-  --bg-panel: rgba(17, 24, 39, 0.65);
-  --color-accent: #f59e0b;
-  --color-accent-glow: rgba(245, 158, 11, 0.12);
-  --color-accent-border: rgba(245, 158, 11, 0.25);
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --gradient-start: #d97706;
-  --gradient-end: #fbbf24;
+.fade    { animation: dcFade .28s ease both }
+.up      { animation: dcUp .34s var(--ease) both }
+.up-sm   { animation: dcUpSm .26s var(--ease) both }
+.pop     { animation: dcPop .24s var(--ease) both }
+.slide-r { animation: dcRight .3s var(--ease) both }
+.drop    { animation: dcDown .18s var(--ease) both }
+.spin    { animation: dcSpin .7s linear infinite }
+.shake   { animation: dcShake .42s both }
+.bar     { animation: dcBar .75s var(--ease) both }
+.splash-mark { animation: dcSplash 1s var(--ease) both }
+.track   { animation: dcTrack 1.25s var(--ease-soft) both }
+.view-a, .view-b { animation: dcUp .3s var(--ease) both }
+.blink   { animation: dcBlink 1.6s ease-in-out infinite }
+.count   { animation: dcCount .32s var(--ease) both }
+
+/* every interactive surface eases rather than snaps */
+button, a, input, select, textarea, [data-t] {
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease,
+              opacity .16s ease, transform .14s var(--ease), box-shadow .18s ease;
 }
+button:not([disabled]):active { transform: scale(.985) }
 
-/* Alpine Emerald */
-html.theme-alpine {
-  --bg-primary: #022c22; /* Forest shade */
-  --bg-panel: rgba(6, 78, 59, 0.6);
-  --color-accent: #10b981; /* Emerald Green */
-  --color-accent-glow: rgba(16, 185, 129, 0.15);
-  --color-accent-border: rgba(16, 185, 129, 0.3);
-  --text-primary: #f0fdf4;
-  --text-secondary: #a7f3d0;
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --gradient-start: #059669;
-  --gradient-end: #34d399;
-}
+/* Buttons rise a hair on hover and press back down. Both live here so the
+   :active state can win — an inline transform would outrank it. */
+.btn { transition: transform .16s var(--ease), background-color .16s ease,
+                   border-color .16s ease, color .16s ease, box-shadow .18s ease }
+.btn:not([disabled]):hover { transform: translateY(-1px) }
+.btn:not([disabled]):active { transform: translateY(0) scale(.985) }
 
-/* Amalfi Azure */
-html.theme-amalfi {
-  --bg-primary: #075985; /* Ocean Navy */
-  --bg-panel: rgba(12, 74, 110, 0.65);
-  --color-accent: #38bdf8; /* Mediterranean Sky Blue */
-  --color-accent-glow: rgba(56, 189, 248, 0.15);
-  --color-accent-border: rgba(56, 189, 248, 0.3);
-  --text-primary: #f0f9ff;
-  --text-secondary: #bae6fd;
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --gradient-start: #0284c7;
-  --gradient-end: #38bdf8;
-}
+/* Restraint is the point: a 1px rise plus a border that darkens reads as
+   considered, where a 2px jump reads as a web page. */
+.lift { transition: transform .2s var(--ease), border-color .16s ease, background-color .16s ease, box-shadow .2s ease }
+.lift:hover { transform: translateY(-1px); border-color: #d8dde5 }
 
-/* Royal Amethyst */
-html.theme-royal {
-  --bg-primary: #1e1b4b; /* Royal violet */
-  --bg-panel: rgba(30, 27, 75, 0.65);
-  --color-accent: #c084fc; /* Lavender bloom */
-  --color-accent-glow: rgba(192, 132, 252, 0.15);
-  --color-accent-border: rgba(192, 132, 252, 0.3);
-  --text-primary: #faf5ff;
-  --text-secondary: #e9d5ff;
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --gradient-start: #8b5cf6;
-  --gradient-end: #c084fc;
-}
+/* The handoff bans decorative depth, so the hover cue here is a whisper of
+   contact shadow under a raised card - not an elevation layer. */
+.lift-shadow { transition: transform .2s var(--ease), box-shadow .22s ease, border-color .16s ease }
+.lift-shadow:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(11, 18, 32, .06); border-color: #d8dde5 }
 
-/* Sunset Terracotta */
-html.theme-terracotta {
-  --bg-primary: #3c1e15; /* Tuscany clay sienna shadow */
-  --bg-panel: rgba(67, 30, 22, 0.65);
-  --color-accent: #f97316; /* Copper gold */
-  --color-accent-glow: rgba(249, 115, 22, 0.15);
-  --color-accent-border: rgba(249, 115, 22, 0.3);
-  --text-primary: #fff7ed;
-  --text-secondary: #ffedd5;
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --gradient-start: #ea580c;
-  --gradient-end: #fb923c;
-}
+.row  { transition: background-color .15s ease, opacity .18s ease }
+.row:hover { background: #fafbfc }
+.nudge:hover { transform: translateX(1px) }
 
-/* Classic Alabaster (Light Theme) */
-html.theme-alabaster, [data-theme="light"] {
-  --bg-primary: #e2e8f0;
-  --bg-panel: #ffffff;
-  --color-accent: #fd9707; /* SOLE Orange */
-  --color-accent-glow: rgba(253, 151, 7, 0.08);
-  --color-accent-border: rgba(253, 151, 7, 0.2);
-  --text-primary: #0b1220;
-  --text-secondary: #475569;
-  --border-primary: rgba(11, 18, 32, 0.12);
-  --gradient-start: #0b1220; /* SOLE Navy */
-  --gradient-end: #fd9707; /* SOLE Orange */
+/* Sidebar nav + any dark-surface control. */
+.nav-item:hover { background: rgba(255, 255, 255, .07) }
+
+/* Reveal a row's trailing actions only while the row is hovered/focused. */
+.row .row-actions { opacity: 0; transition: opacity .16s ease }
+.row:hover .row-actions,
+.row:focus-within .row-actions { opacity: 1 }
+
+[disabled] { opacity: .48; cursor: not-allowed !important; transform: none !important }
+.grab { cursor: grab }
+.grab:active { cursor: grabbing }
+.drag-ghost { opacity: .38 }
+
+/* Drop target while a traveller chip is being dragged over a group. */
+.drop-live { box-shadow: inset 0 0 0 2px rgba(253, 151, 7, .5); background: #fffdf8 }
+
+/* keyboard focus ring, drawn with the accent, no layout shift. The outline
+   follows each control's own border-radius, so it reads as part of the shape. */
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid rgba(253, 151, 7, .55);
+  outline-offset: 2px;
 }
 
-/* Animated Gradient Background for Login */
-.login-animated-bg {
-  background: linear-gradient(-45deg, #0b1220, #1e293b, #0f172a, #331f06, #1e1b4b, #fd9707, #0b1220);
-  background-size: 400% 400%;
-  animation: gradientFlow 18s ease infinite;
+/* Dark surfaces need the ring lightened or it disappears into the navy. */
+[data-r='side'] button:focus-visible,
+[data-r='sidepanel'] button:focus-visible,
+[data-r='sidepanel'] a:focus-visible {
+  outline-color: rgba(253, 180, 78, .8);
+  outline-offset: -2px;
 }
 
-@keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
 }
 
-/* Font styles custom overrides classes */
-.font-style-sans {
-  font-family: var(--font-sans) !important;
-}
-.font-style-serif {
-  font-family: var(--font-serif) !important;
-}
-.font-style-mono {
-  font-family: var(--font-mono) !important;
-}
-
-/* Scrollbar styles - Hidden globally per user request */
-::-webkit-scrollbar {
-  display: none !important;
-  width: 0px !important;
-  height: 0px !important;
-}
-* {
-  -ms-overflow-style: none !important;  /* IE and Edge */
-  scrollbar-width: none !important;  /* Firefox */
-}
-
-/* Media Print Overrides for manifest downloads */
+/* ── print: the manifest document only ──────────────────────────────────── */
 @media print {
-  html, body {
-    background: #ffffff !important;
-    color: #000000 !important;
-  }
-  aside {
-    display: none !important;
-  }
-  main {
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-    height: auto !important;
-    width: 100% !important;
-    overflow: visible !important;
-  }
-  .print\:hidden {
-    display: none !important;
-  }
-}
-
-/* Custom Fade Animation Classes */
-.animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.card-fade-in {
-  animation: cardFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes cardFadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(16px) scale(0.98);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Premium Glassmorphic style presets */
-.glass-panel {
-  background: var(--bg-panel);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  border: 1px solid var(--border-primary);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04);
-}
-
-/* Floating liquid design background circles animation classes */
-.animate-blob-float-1 {
-  animation: blob-float-1 25s ease-in-out infinite;
-}
-.animate-blob-float-2 {
-  animation: blob-float-2 28s ease-in-out infinite;
-}
-.animate-blob-float-3 {
-  animation: blob-float-3 22s ease-in-out infinite;
-}
-
-@keyframes blob-float-1 {
-  0%, 100% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(60px, -50px) scale(1.15); }
-  66% { transform: translate(-40px, 40px) scale(0.85); }
-}
-@keyframes blob-float-2 {
-  0%, 100% { transform: translate(0px, 0px) scale(1); }
-  50% { transform: translate(-50px, 60px) scale(1.1); }
-}
-@keyframes blob-float-3 {
-  0%, 100% { transform: translate(0px, 0px) scale(1); }
-  40% { transform: translate(50px, -40px) scale(0.95); }
+  [data-print='hide'] { display: none !important; }
+  html, body { background: #fff !important; }
+  [data-r='shell'] { display: block !important; height: auto !important; overflow: visible !important; }
+  [data-r='pad'] { overflow: visible !important; padding: 0 !important; }
+  [data-r='doc'] { border: 0 !important; padding: 0 !important; border-radius: 0 !important; }
+  [data-r='scroll'] { overflow: visible !important; }
 }
