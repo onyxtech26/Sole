@@ -144,6 +144,44 @@ input[type='number'] { -moz-appearance: textfield; }
   [data-r='search'] input { width: 100% !important; }
 }
 
+/* ── narrow: dense rows, field grids and section headers ────────────────────
+   The screens are built from flex rows of fixed-width columns, which is right
+   on a laptop and overflows on a phone. Rather than rewriting every screen,
+   three hooks reflow them: `listrow` wraps a dense row, `fields` stacks a row
+   of form controls, `sechead` lets a section header's buttons drop to a second
+   line. `data-grow` marks the one child that should claim a full line.        */
+@media (max-width: 700px) {
+  [data-r='listrow'] {
+    flex-wrap: wrap !important;
+    row-gap: 6px !important;
+  }
+  [data-r='listrow'] [data-grow] {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+
+  [data-r='fields'] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  [data-r='fields'] > label,
+  [data-r='fields'] > div {
+    width: 100% !important; min-width: 0 !important; flex: 1 1 auto !important;
+  }
+  [data-r='fields'] input,
+  [data-r='fields'] select,
+  [data-r='fields'] textarea { width: 100% !important; }
+
+  [data-r='sechead'] { flex-wrap: wrap !important; row-gap: 8px !important; height: auto !important; }
+  [data-r='sechead'] select { width: 100% !important; }
+
+  [data-r='filters'] > label { flex: 1 1 100% !important; min-width: 0 !important; }
+
+  /* Anything still scrolling sideways (the manifest table) gets momentum. */
+  [data-r='scroll'], [data-r='doc'] { -webkit-overflow-scrolling: touch; }
+}
+
 /* ── phones ─────────────────────────────────────────────────────────────── */
 @media (max-width: 560px) {
   [data-r='pad'] { padding: 10px !important; }

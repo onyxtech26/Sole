@@ -188,7 +188,7 @@ export function MessagesView({ store, setConfirm }: ViewProps) {
             </SectionHead>
 
             <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div data-r="fields" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <label style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <MicroLabel>Name</MicroLabel>
                   <Input value={working.name} onChange={(e: any) => edit({ name: e.target.value })} />

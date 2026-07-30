@@ -227,6 +227,7 @@ export function FinanceView({ store, range, rangeValue, user, setConfirm }: View
               key={e.id}
               as="div"
               className="row"
+              data-r="listrow"
               style={{
                 display: 'flex', alignItems: 'center', gap: 11, padding: '10px 15px',
                 borderBottom: `1px solid ${C.lineFaint}`,
@@ -246,7 +247,7 @@ export function FinanceView({ store, range, rangeValue, user, setConfirm }: View
               <span style={{ width: 104, flexShrink: 0, fontSize: 11.5, color: C.muted2 }}>
                 {e.cat === 'Other' && e.customCat ? e.customCat : e.cat}
               </span>
-              <span style={{
+              <span data-grow style={{
                 flex: 1, minWidth: 0, fontSize: 12, whiteSpace: 'nowrap',
                 overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
@@ -436,7 +437,7 @@ export function FinanceView({ store, range, rangeValue, user, setConfirm }: View
               onClose={() => setEditing(null)}
             />
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 11 }}>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div data-r="fields" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <Fld label="Date">
                   <Input
                     type="date"
@@ -482,7 +483,7 @@ export function FinanceView({ store, range, rangeValue, user, setConfirm }: View
                 />
               </Fld>
 
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div data-r="fields" style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                 <Fld label="Status">
                   <Select
                     value={editing.status}

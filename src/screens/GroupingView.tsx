@@ -323,7 +323,7 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                 </Hov>
               </div>
 
-              <div style={{
+              <div data-r="fields" style={{
                 display: 'flex', gap: 10, padding: '10px 14px', flexWrap: 'wrap',
                 borderBottom: `1px solid ${C.lineSoft}`,
               }}>

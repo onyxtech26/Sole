@@ -229,7 +229,7 @@ export function ToursView({ store, setConfirm }: ViewProps) {
               onClose={() => setEditing(null)}
             />
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div data-r="fields" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <label style={{ width: 170, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <Micro>Product code</Micro>
                   <Input

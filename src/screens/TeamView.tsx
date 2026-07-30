@@ -279,6 +279,7 @@ export function TeamView({ store, setConfirm }: ViewProps) {
                 key={s.id}
                 as="div"
                 className="row"
+                data-r="listrow"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 11, padding: '11px 15px',
                   borderBottom: `1px solid ${C.lineFaint}`,
@@ -301,7 +302,7 @@ export function TeamView({ store, setConfirm }: ViewProps) {
                 }}>
                   {s.role}
                 </span>
-                <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, color: C.muted2 }}>
+                <span data-grow style={{ flex: 1, minWidth: 0, fontSize: 11.5, color: C.muted2 }}>
                   {s.duties || '—'}
                 </span>
                 <span style={{
@@ -356,7 +357,7 @@ export function TeamView({ store, setConfirm }: ViewProps) {
                   onChange={(e: any) => setGuideDraft({ ...guideDraft, name: e.target.value })}
                 />
               </Fld>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div data-r="fields" style={{ display: 'flex', gap: 10 }}>
                 <Fld label="Phone" grow>
                   <Input
                     value={guideDraft.phone}
@@ -420,7 +421,7 @@ export function TeamView({ store, setConfirm }: ViewProps) {
                   onChange={(e: any) => setStaffDraft({ ...staffDraft, name: e.target.value })}
                 />
               </Fld>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div data-r="fields" style={{ display: 'flex', gap: 10 }}>
                 <Fld label="Job title" grow>
                   <Input
                     value={staffDraft.role}

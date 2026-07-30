@@ -455,6 +455,7 @@ export function CustomersView({ store, setConfirm }: ViewProps) {
                 key={b.ref}
                 as="div"
                 className="row"
+                data-r="listrow"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 11, padding: '10px 15px',
                   borderBottom: `1px solid ${C.lineFaint}`,
@@ -471,7 +472,7 @@ export function CustomersView({ store, setConfirm }: ViewProps) {
                 }}>
                   {longDate(b.date).split(' ').slice(1).join(' ')}
                 </span>
-                <span style={{
+                <span data-grow style={{
                   flex: 1, minWidth: 0, fontSize: 12, whiteSpace: 'nowrap',
                   overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
@@ -515,7 +516,7 @@ export function CustomersView({ store, setConfirm }: ViewProps) {
               <Fld label="Name">
                 <Input value={draft.name} onChange={(e: any) => setDraft({ ...draft, name: e.target.value })} />
               </Fld>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div data-r="fields" style={{ display: 'flex', gap: 10 }}>
                 <Fld label="Email" grow>
                   <Input
                     type="email"
@@ -531,7 +532,7 @@ export function CustomersView({ store, setConfirm }: ViewProps) {
                   />
                 </Fld>
               </div>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div data-r="fields" style={{ display: 'flex', gap: 10 }}>
                 <Fld label="Country" grow>
                   <Input
                     value={draft.country}

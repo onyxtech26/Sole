@@ -236,6 +236,7 @@ export function SectionHead({
 }: { title: ReactNode; note?: ReactNode; children?: ReactNode; style?: CSSProperties }) {
   return (
     <div
+      data-r="sechead"
       style={{
         display: 'flex', alignItems: 'center', gap: 10, padding: '10px 15px',
         // Fixed height so a header carrying buttons sits on the same baseline as
