@@ -242,7 +242,7 @@ export default function DateRangeFilter({ onChange, allowAll = false, onAll, cla
           </div>
 
           {/* Weekday headers */}
-          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] text-theme-muted uppercase">
+          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[0.625rem] text-theme-muted uppercase">
             {WEEKDAYS.map(w => (
               <span key={w} className="py-0.5">{w}</span>
             ))}
@@ -389,7 +389,7 @@ export default function DateRangeFilter({ onChange, allowAll = false, onAll, cla
     // year mode
     return (
       <div className="space-y-2">
-        <span className="text-[10px] font-bold text-theme-muted uppercase tracking-wider block mb-1">Select Year</span>
+        <span className="text-[0.625rem] font-bold text-theme-muted uppercase tracking-wider block mb-1">Select Year</span>
         <div 
           ref={yearScrollRef}
           className="bg-white border border-theme-border rounded-xl py-1 max-h-48 overflow-y-auto w-full"
@@ -419,7 +419,11 @@ export default function DateRangeFilter({ onChange, allowAll = false, onAll, cla
   };
 
   return (
-    <div ref={containerRef} className={`flex flex-col gap-3 relative ${className}`}>
+    // `items-start` matters: this is a column flex container, so without it the
+    // default `align-items: stretch` pulls the tab row to the full width of
+    // whatever card it sits in and `sm:w-auto` below never takes effect. Callers
+    // can still override the alignment (the dashboard passes `lg:items-end`).
+    <div ref={containerRef} className={`flex flex-col items-start gap-3 relative ${className}`}>
       {/* Mode tabs */}
       <div className="flex items-center gap-1 bg-white/50 border border-theme-border rounded-xl p-1 w-full sm:w-auto overflow-x-auto">
         {MODES.map(m => (
@@ -463,7 +467,7 @@ export default function DateRangeFilter({ onChange, allowAll = false, onAll, cla
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="flex items-center gap-2 bg-white/60 hover:bg-white border border-theme-border rounded-xl px-4 py-2.5 text-xs font-bold text-theme-text outline-none focus:border-orange-500 cursor-pointer shadow-sm min-w-[170px] justify-between transition duration-200"
+              className="flex items-center gap-2 bg-white/60 hover:bg-white border border-theme-border rounded-xl px-4 py-2.5 text-xs font-bold text-theme-text outline-none focus:border-orange-500 cursor-pointer shadow-sm min-w-[10.625rem] justify-between transition duration-200"
             >
               <Calendar className="w-3.5 h-3.5 text-theme-muted shrink-0" />
               <span className="truncate flex-1 text-left px-1.5">{range.label}</span>
@@ -472,7 +476,7 @@ export default function DateRangeFilter({ onChange, allowAll = false, onAll, cla
 
             {/* Custom Popover Centered relative to Toggle Button */}
             {isOpen && (
-              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-[270px] bg-white border border-theme-border rounded-2xl p-3.5 shadow-2xl shadow-[#0b1220]/10 z-50">
+              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-[16.875rem] bg-white border border-theme-border rounded-2xl p-3.5 shadow-2xl shadow-[#0b1220]/10 z-50">
                 {renderPopoverContent()}
               </div>
             )}

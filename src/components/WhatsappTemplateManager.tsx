@@ -119,7 +119,7 @@ export default function WhatsappTemplateManager({ templates, onChange, onClose }
                     <div key={tpl.id} className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 bg-white/60 hover:bg-slate-50 transition">
                       <div className="min-w-0">
                         <h4 className="text-sm font-bold text-slate-800 truncate">{tpl.title || '(untitled)'}</h4>
-                        <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">{tpl.en.slice(0, 80)}…</p>
+                        <p className="text-[0.6875rem] text-slate-500 font-medium truncate mt-0.5">{tpl.en.slice(0, 80)}…</p>
                       </div>
                       <div className="flex gap-1.5 shrink-0">
                         <button
@@ -145,7 +145,7 @@ export default function WhatsappTemplateManager({ templates, onChange, onClose }
               /* Editor */
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Template Title</label>
+                  <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Template Title</label>
                   <input
                     type="text"
                     value={editing.title}
@@ -170,7 +170,7 @@ export default function WhatsappTemplateManager({ templates, onChange, onClose }
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">
                     Message Body ({lang.toUpperCase()})
                   </label>
                   <textarea
@@ -180,7 +180,7 @@ export default function WhatsappTemplateManager({ templates, onChange, onClose }
                     placeholder="Type the message. Use placeholders like {leadTraveler}, {tourName}, {bookingRef}, {travelDate}, {tourTime}."
                     className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium text-slate-800 outline-none leading-relaxed focus:border-orange-500 focus:bg-white"
                   />
-                  <p className="text-[10px] text-slate-400 font-medium">
+                  <p className="text-[0.625rem] text-slate-400 font-medium">
                     Placeholders: <code className="text-slate-600">{'{leadTraveler} {tourName} {bookingRef} {travelDate} {tourTime} {meetingPoint}'}</code>
                   </p>
                 </div>

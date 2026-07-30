@@ -11,9 +11,10 @@ import { loadWhatsappTemplates, saveWhatsappTemplates, fillTemplate, WhatsappTem
 import WhatsappTemplateManager from './WhatsappTemplateManager';
 import { createPortal } from 'react-dom';
 import { usePersistentValue } from '../utils/storage';
-import { isPlaceholderName } from '../utils/viatorImport';
+import { isPlaceholderName, countMissingNames } from '../utils/viatorImport';
 import { SEED_GUIDES } from '../utils/seed';
 import { GUIDES_STORAGE_KEY } from './GuidesView';
+import AddBookingView from './AddBookingView';
 
 interface ScheduleViewProps {
   bookings: Booking[];
@@ -96,6 +97,8 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [radarOpen, setRadarOpen] = useState(true);
+  // Booking opened straight from a radar alert so names can be filled in place.
+  const [editBookingRef, setEditBookingRef] = useState<string | null>(null);
 
   // Modals state
   const [editingGroup, setEditingGroup] = useState<TourGroup | null>(null);
@@ -287,16 +290,6 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
     setEditingGroup(null);
   };
 
-  const handleToggleNamesLocked = (bookingRef: string) => {
-    const nextBookings = bookings.map(b => {
-      if (b.bookingRef === bookingRef) {
-        return { ...b, namesLocked: !b.namesLocked };
-      }
-      return b;
-    });
-    onUpdateBookings(nextBookings);
-  };
-
   const executeAutoGroup = () => {
     if (unassignedTravelers.length === 0) return;
 
@@ -434,7 +427,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
       leadTraveler: string;
       message: string;
       type: 'radar-severe' | 'radar-warn' | 'radar-info';
-      namesLocked?: boolean;
+      missingNames: number;
     }[] = [];
 
     const today = new Date();
@@ -445,13 +438,19 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       const hasMissingNames = b.namesComplete === false || b.travelers.some(isPlaceholderName);
-      if (diffDays <= 7 && diffDays >= 0 && hasMissingNames) {
+      // Every alert on this radar is about missing passport names, so none of
+      // them are raised once the manifest is complete — filling the names in is
+      // what clears the widget.
+      if (!hasMissingNames) return;
+      const missingNames = countMissingNames(b);
+
+      if (diffDays <= 7 && diffDays >= 0) {
         alerts.push({
           bookingRef: b.bookingRef,
           leadTraveler: b.leadTraveler,
-          message: `🚨 Name Lock in ${diffDays} day(s)! Guest names must match passport ID. Incomplete names found.`,
+          message: `🚨 Name Lock in ${diffDays} day(s)! Guest names must match passport ID. ${missingNames} name${missingNames === 1 ? '' : 's'} still missing.`,
           type: diffDays <= 2 ? 'radar-severe' : 'radar-warn',
-          namesLocked: !!b.namesLocked
+          missingNames
         });
       }
 
@@ -459,15 +458,24 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
         alerts.push({
           bookingRef: b.bookingRef,
           leadTraveler: b.leadTraveler,
-          message: `🎟 Tickets purchasable from T-30 window. Confirm traveler names to lock.`,
+          message: `🎟 Tickets purchasable from T-30 window. ${missingNames} name${missingNames === 1 ? '' : 's'} still missing — confirm to lock.`,
           type: 'radar-info',
-          namesLocked: !!b.namesLocked
+          missingNames
         });
       }
     });
 
     return alerts;
   }, [dayBookings]);
+
+  // Save a booking edited from a radar alert. Upsert by reference so the store
+  // write is a single diff, and the alert clears as soon as names are complete.
+  const handleSaveBookingFromRadar = (booking: Booking) => {
+    const idx = bookings.findIndex(b => b.bookingRef === booking.bookingRef);
+    const next = idx === -1 ? [...bookings, booking] : bookings.map((b, i) => (i === idx ? booking : b));
+    onUpdateBookings(next);
+    setEditBookingRef(null);
+  };
 
   // Look up a guide/staff phone number by name from the live directory.
   const guidePhoneByName = (name: string | null): string => {
@@ -675,37 +683,36 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
             </button>
             <h3 className="text-sm font-extrabold text-rose-800 flex items-center gap-2 mb-3">
               <AlertCircle className="w-4 h-4 text-rose-600" />
-              <span>Colosseum Nominative Gate Radar ({deadlineAlerts.filter(a => !a.namesLocked).length} Active Alerts)</span>
+              <span>Colosseum Nominative Gate Radar ({deadlineAlerts.length} Active Alerts)</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* The whole card is the action: it opens the booking so the missing
+                  passport names can be typed in, and saving clears the alert. */}
               {deadlineAlerts.map((alert, idx) => (
-                <div 
-                  key={idx} 
-                  className={`p-3 rounded-xl border flex gap-2.5 items-start text-xs font-semibold leading-relaxed transition-all duration-300 ${
-                    alert.namesLocked 
-                      ? 'bg-emerald-50/40 border-emerald-200/50 text-slate-400 opacity-60' 
-                      : alert.type === 'radar-severe' ? 'bg-rose-50 border-rose-200 text-rose-700' :
-                        alert.type === 'radar-warn' ? 'bg-amber-50 border-amber-200 text-amber-700' :
-                        'bg-sky-50 border-sky-200 text-sky-700'
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setEditBookingRef(alert.bookingRef)}
+                  title={`Add the missing passenger names for ${alert.bookingRef}`}
+                  className={`group/alert w-full p-3 rounded-xl border text-left text-xs font-semibold leading-relaxed cursor-pointer transition-all duration-300 hover:shadow-md active:scale-[0.99] ${
+                    alert.type === 'radar-severe' ? 'bg-rose-50 border-rose-200 text-rose-700 hover:border-rose-400' :
+                    alert.type === 'radar-warn' ? 'bg-amber-50 border-amber-200 text-amber-700 hover:border-amber-400' :
+                    'bg-sky-50 border-sky-200 text-sky-700 hover:border-sky-400'
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={alert.namesLocked}
-                    onChange={() => handleToggleNamesLocked(alert.bookingRef)}
-                    className="mt-0.5 w-4 h-4 rounded text-orange-600 border-slate-300 focus:ring-orange-500 cursor-pointer shrink-0"
-                    title="Toggle verified & locked status"
-                  />
-                  <div>
-                    <span className={`font-mono font-extrabold mr-1.5 ${alert.namesLocked ? 'line-through text-slate-400' : 'text-orange-600'}`}>
-                      {alert.bookingRef}
-                    </span>
-                    <strong className={alert.namesLocked ? 'line-through' : ''}>{alert.leadTraveler}</strong>
-                    <p className={`font-medium mt-0.5 ${alert.namesLocked ? 'text-slate-400 line-through font-normal italic' : 'text-rose-600/80'}`}>
-                      {alert.namesLocked ? 'Verified. Traveler passport documents checked & names locked.' : alert.message}
-                    </p>
-                  </div>
-                </div>
+                  <span className="font-mono font-extrabold mr-1.5 text-orange-600">
+                    {alert.bookingRef}
+                  </span>
+                  <strong>{alert.leadTraveler}</strong>
+                  <p className="font-medium mt-0.5 text-rose-600/80">
+                    {alert.message}
+                  </p>
+                  <span className="inline-flex items-center gap-1 mt-1.5 text-[0.625rem] font-extrabold uppercase tracking-wider text-orange-600 group-hover/alert:gap-1.5 transition-all">
+                    <Edit className="w-3 h-3" />
+                    Add names
+                    <ChevronRight className="w-3 h-3" />
+                  </span>
+                </button>
               ))}
             </div>
           </motion.div>
@@ -725,7 +732,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
               <Users className="w-4 h-4 text-slate-500" />
               <span>Unassigned Ledger</span>
             </h3>
-            <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600 font-mono">
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[0.625rem] font-bold text-slate-600 font-mono">
               {unassignedTravelers.length} Pax
             </span>
           </div>
@@ -743,7 +750,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
           </div>
 
           {/* Unassigned List container */}
-          <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-[34.375rem] overflow-y-auto pr-1">
             {filteredUnassigned.length === 0 ? (
               <div className="py-8 text-center text-xs text-slate-400 font-medium">
                 No unassigned guests.
@@ -803,20 +810,20 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                       <h4 className="font-extrabold text-xs text-slate-800 truncate" title={group.tourName}>
                         {group.tourName} ({group.productOptionCode})
                       </h4>
-                      <div className="flex items-center gap-1.5 mt-1 text-[10px] text-slate-500 font-bold">
+                      <div className="flex items-center gap-1.5 mt-1 text-[0.625rem] text-slate-500 font-bold">
                         <Clock className="w-3 h-3 text-slate-400" />
                         <span>Dep: {group.departureTime}</span>
                         <span className="text-slate-300">•</span>
                         <span>Ent: {group.ticketTime}</span>
                       </div>
-                      <div className="text-[9px] text-slate-400 font-bold mt-1 font-mono">📅 {group.serviceDate}</div>
-                      <p className="text-[10px] text-slate-500 font-semibold mt-1">
+                      <div className="text-[0.5625rem] text-slate-400 font-bold mt-1 font-mono">📅 {group.serviceDate}</div>
+                      <p className="text-[0.625rem] text-slate-500 font-semibold mt-1">
                         👤 Guide: <strong className="text-orange-600">{group.guideName || 'Unassigned'}</strong>
                       </p>
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide font-mono ${
+                      <span className={`px-2 py-0.5 rounded-full text-[0.5625rem] font-extrabold uppercase tracking-wide font-mono ${
                         isOver ? 'bg-rose-500 text-white shadow-sm' : 
                         isFull ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600 border border-slate-200'
                       }`}>
@@ -841,9 +848,9 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                     </div>
                   </div>
 
-                  <div className="flex-grow space-y-2.5 min-h-[150px] max-h-[350px] overflow-y-auto pr-1">
+                  <div className="flex-grow space-y-2.5 min-h-[9.375rem] max-h-[21.875rem] overflow-y-auto pr-1">
                     {assignedGuests.length === 0 ? (
-                      <div className="h-full flex items-center justify-center text-[10px] text-slate-400 font-semibold border-2 border-dashed border-slate-100 rounded-xl py-12">
+                      <div className="h-full flex items-center justify-center text-[0.625rem] text-slate-400 font-semibold border-2 border-dashed border-slate-100 rounded-xl py-12">
                         Drag guests here
                       </div>
                     ) : (
@@ -861,7 +868,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                   </div>
 
                   {group.notes && (
-                    <div className="mt-3 p-2 bg-slate-50 rounded-lg text-[9px] font-medium text-slate-500 italic border-l-2 border-slate-300">
+                    <div className="mt-3 p-2 bg-slate-50 rounded-lg text-[0.5625rem] font-medium text-slate-500 italic border-l-2 border-slate-300">
                       Note: {group.notes}
                     </div>
                   )}
@@ -877,7 +884,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
         <AnimatePresence>
           {editingGroup && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setEditingGroup(null)}
             >
               <motion.div 
@@ -904,7 +911,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
 
                 <form onSubmit={handleSaveGroupSettings} className="space-y-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tour Product</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Tour Product</label>
                     <select
                       value={editingGroup.productCode}
                       onChange={(e) => {
@@ -927,7 +934,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Assigned Guide</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Assigned Guide</label>
                     <select
                       value={editingGroup.guideName || ''}
                       onChange={(e) => setEditingGroup(prev => prev ? { ...prev, guideName: e.target.value || null } : null)}
@@ -945,7 +952,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Departure Time</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Departure Time</label>
                       <input
                         type="time"
                         value={editingGroup.departureTime}
@@ -954,7 +961,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ticket Entry Time</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Ticket Entry Time</label>
                       <input
                         type="time"
                         value={editingGroup.ticketTime}
@@ -966,7 +973,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Group Capacity</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Group Capacity</label>
                       <input
                         type="number"
                         min={1}
@@ -976,7 +983,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ticket Status</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Ticket Status</label>
                       <select
                         value={editingGroup.ticketStatus}
                         onChange={(e) => setEditingGroup(prev => prev ? { ...prev, ticketStatus: e.target.value } : null)}
@@ -991,7 +998,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Operational Notes</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Operational Notes</label>
                     <textarea
                       value={editingGroup.notes}
                       onChange={(e) => setEditingGroup(prev => prev ? { ...prev, notes: e.target.value } : null)}
@@ -1029,7 +1036,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
         <AnimatePresence>
           {whatsappComposer && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setWhatsappComposer(null)}
             >
               <motion.div 
@@ -1056,7 +1063,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
 
                 <div className="space-y-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Message Stage</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Select Message Stage</label>
                     <select
                       value={whatsappComposer.templateId}
                       onChange={(e) => handleTemplateOrLangChange(e.target.value, whatsappComposer.lang)}
@@ -1087,7 +1094,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Message Body Preview & Edit</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Message Body Preview & Edit</label>
                     <textarea
                       value={whatsappComposer.editedText}
                       onChange={(e) => setWhatsappComposer(prev => prev ? { ...prev, editedText: e.target.value } : null)}
@@ -1179,7 +1186,7 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
         <AnimatePresence>
           {showAutoGroupConfirm && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setShowAutoGroupConfirm(false)}
             >
               <motion.div 
@@ -1213,6 +1220,54 @@ export default function ScheduleView({ bookings, currentUser, onUpdateBookings }
                     Start Auto-Group
                   </button>
                 </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* ─── Fill Passenger Names (opened from a radar alert) ─── */}
+      {createPortal(
+        <AnimatePresence>
+          {editBookingRef && (
+            <div
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
+              onClick={() => setEditBookingRef(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white border border-slate-100 rounded-3xl w-full max-w-4xl p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh] relative"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setEditBookingRef(null)}
+                  className="absolute top-5 right-5 p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                <div className="w-10 h-10 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center mb-4 shrink-0">
+                  <ShieldAlert className="w-5 h-5 text-orange-600" />
+                </div>
+
+                <h3 className="text-base font-extrabold text-slate-900 font-sans mb-1">Complete Passenger Names</h3>
+                <p className="text-slate-500 text-xs font-semibold mb-5">
+                  Enter each passport name for <span className="font-mono font-extrabold text-orange-600">{editBookingRef}</span>.
+                  Saving clears this booking from the nominative gate radar.
+                </p>
+
+                <AddBookingView
+                  bookings={bookings}
+                  currentUser={currentUser}
+                  editBookingRef={editBookingRef}
+                  onSaveBooking={handleSaveBookingFromRadar}
+                  onCancel={() => setEditBookingRef(null)}
+                />
               </motion.div>
             </div>
           )}
@@ -1255,7 +1310,7 @@ function TravelerCard({ t, onDragStart, onDragEnd, onOpenComposer, split }: Trav
             <span className="text-slate-400 font-bold text-xs">⠿</span>
             <h4 className="font-extrabold text-xs text-slate-800 truncate leading-none">{t.name}</h4>
           </div>
-          <div className="flex items-center gap-2 mt-1.5 text-[9px] font-bold text-slate-500 font-mono">
+          <div className="flex items-center gap-2 mt-1.5 text-[0.5625rem] font-bold text-slate-500 font-mono">
             <span className="text-orange-600">{t.bookingRef}</span>
             <span>•</span>
             <span>{t.tourTime}</span>
@@ -1284,19 +1339,19 @@ function TravelerCard({ t, onDragStart, onDragEnd, onOpenComposer, split }: Trav
       </div>
 
       {split && (
-        <div className="mt-2 py-0.5 px-1.5 bg-rose-50 border border-rose-100 rounded text-[9px] text-rose-600 font-bold inline-flex items-center gap-1">
+        <div className="mt-2 py-0.5 px-1.5 bg-rose-50 border border-rose-100 rounded text-[0.5625rem] text-rose-600 font-bold inline-flex items-center gap-1">
           <span>½ Split booking ({split.totalCount} pax total)</span>
         </div>
       )}
 
       {expanded && (
-        <div className="mt-3.5 pt-2 border-t border-slate-100 space-y-1.5 text-[10px] text-slate-655 font-medium">
+        <div className="mt-3.5 pt-2 border-t border-slate-100 space-y-1.5 text-[0.625rem] text-slate-655 font-medium">
           <p><strong>Tour option requested:</strong> {t.tourName}</p>
           <p><strong>Phone:</strong> {t.phone || 'N/A'}</p>
           {t.notes && <p className="text-slate-500 italic"><strong>Notes:</strong> {t.notes}</p>}
           
           {split && (
-            <div className="bg-slate-50 p-1.5 rounded border border-slate-100 mt-2 text-[9px] leading-relaxed">
+            <div className="bg-slate-50 p-1.5 rounded border border-slate-100 mt-2 text-[0.5625rem] leading-relaxed">
               <span className="font-bold text-slate-700">Split details:</span>
               {Object.keys(split.distribution).map(gName => (
                 <p key={gName}>• {gName}: {split.distribution[gName].join(', ')}</p>

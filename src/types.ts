@@ -30,6 +30,25 @@ export interface Booking {
   tourGradeCode?: string; // e.g. "TG4" (Viator "Codice livello del tour")
   tourGradeTitle?: string; // e.g. "Semi Private (max 7 people) 14:00"
   source?: 'manual' | 'viator_import';
+  // Four message-workflow flags as 0/1, index-aligned with WORKFLOW_STEPS:
+  // [name collected, confirmed, time coordination sent, review requested].
+  workflow?: number[];
+}
+
+/** One Viator report upload, appended to the shared history on every import. */
+export interface ImportBatch {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  importedAt: string; // ISO timestamp
+  importedByName: string;
+  rowsTotal: number;
+  rowsAdded: number;
+  rowsUpdated: number;
+  rowsUnchanged: number;
+  rowsCancelled: number;
+  rowsInvalid: number;
+  source: string;
 }
 
 export interface User {

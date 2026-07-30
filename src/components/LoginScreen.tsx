@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Eye, EyeOff, ShieldAlert, Sparkles, ArrowRight, Lock, User as UserIcon, ExternalLink, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, ShieldAlert, ArrowRight, Lock, User as UserIcon, ExternalLink, Loader2 } from 'lucide-react';
 import { User } from '../types';
 import { signIn } from '../lib/auth';
 
@@ -30,20 +30,14 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     setLoading(false);
   };
 
-  // Quick-fill a username (operators still type their own password).
-  const handleQuickFill = (roleUser: string) => {
-    setUsername(roleUser);
-    setError('');
-  };
-
   return (
     <div className="fixed inset-0 w-screen h-screen login-animated-bg flex items-center justify-center z-50 p-4 overflow-hidden font-sans select-none">
       
       {/* Animated Glowing Light Orbs & Mesh Overlays */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-orange-500/30 to-amber-300/20 blur-[130px] animate-blob-float-1" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-indigo-600/30 via-purple-600/20 to-orange-500/20 blur-[140px] animate-blob-float-2" />
-        <div className="absolute top-[40%] right-[20%] w-[350px] h-[350px] rounded-full bg-gradient-to-r from-amber-500/20 to-rose-500/20 blur-[110px] animate-blob-float-3" />
+        <div className="absolute top-[-10%] left-[-10%] w-[31.25rem] h-[31.25rem] rounded-full bg-gradient-to-tr from-orange-500/30 to-amber-300/20 blur-[8.125rem] animate-blob-float-1" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[34.375rem] h-[34.375rem] rounded-full bg-gradient-to-br from-indigo-600/30 via-purple-600/20 to-orange-500/20 blur-[8.75rem] animate-blob-float-2" />
+        <div className="absolute top-[40%] right-[20%] w-[21.875rem] h-[21.875rem] rounded-full bg-gradient-to-r from-amber-500/20 to-rose-500/20 blur-[6.875rem] animate-blob-float-3" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.3)_100%)]" />
       </div>
 
@@ -73,7 +67,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             alt="SOLE"
             className="h-8 w-auto mx-auto mb-2"
           />
-          <p className="text-slate-500 text-[11px] font-extrabold tracking-[0.2em] uppercase">
+          <p className="text-slate-500 text-[0.6875rem] font-extrabold tracking-[0.2em] uppercase">
             Smart Operations & Logistics Engine
           </p>
         </div>
@@ -154,37 +148,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           </motion.button>
         </form>
 
-        {/* Team Quick Access — fills the username, then enter your password */}
-        <div className="mt-6 pt-5 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-orange-500" /> Team Members
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono">Tap to fill username</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            {([
-              { user: 'sina', label: 'Sina', tier: 'Full access' },
-              { user: 'masoud', label: 'Masoud', tier: 'Full access' },
-              { user: 'tina', label: 'Tina', tier: 'No finance' },
-            ]).map(m => (
-              <button
-                key={m.user}
-                type="button"
-                onClick={() => handleQuickFill(m.user)}
-                className="bg-slate-50 hover:bg-orange-50/80 border border-slate-200/80 hover:border-orange-300 rounded-xl p-2.5 text-left transition duration-200 group cursor-pointer"
-              >
-                <span className="text-xs font-extrabold text-slate-800 group-hover:text-orange-600 block">{m.label}</span>
-                <span className="text-[10px] text-slate-400 font-mono block">{m.tier}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Powered By Footer Link */}
-        <div className="mt-5 text-center border-t border-slate-100 pt-3.5">
-          <p className="text-[11px] text-slate-500 font-bold tracking-wide">
+        <div className="mt-6 text-center border-t border-slate-100 pt-4">
+          <p className="text-[0.6875rem] text-slate-500 font-bold tracking-wide">
             Powered By{' '}
             <a
               href="https://onyxx-tech.vercel.app/index.html"

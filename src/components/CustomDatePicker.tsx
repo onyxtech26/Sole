@@ -190,7 +190,7 @@ export default function CustomDatePicker({
             animate={{ opacity: 1, y: 5, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-1/2 -translate-x-1/2 mt-1.5 w-[310px] bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xl z-55"
+            className="absolute left-1/2 -translate-x-1/2 mt-1.5 w-[19.375rem] bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xl z-55"
           >
             {/* ──── DATE PICKER MODE ──── */}
             {type === 'date' && (
@@ -283,7 +283,7 @@ export default function CustomDatePicker({
                 </div>
 
                 {/* Weekdays indicator grid */}
-                <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] text-slate-450 uppercase">
+                <div className="grid grid-cols-7 gap-1 text-center font-bold text-[0.625rem] text-slate-450 uppercase">
                   {WEEKDAYS.map(w => (
                     <span key={w} className="py-1">{w}</span>
                   ))}
@@ -412,7 +412,7 @@ export default function CustomDatePicker({
             {/* ──── YEAR PICKER MODE ──── */}
             {type === 'year' && (
               <div className="space-y-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Select Year</span>
+                <span className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block mb-1">Select Year</span>
                 <div 
                   ref={yearScrollRef}
                   className="bg-white border border-slate-200/80 rounded-xl py-1 max-h-48 overflow-y-auto w-full"

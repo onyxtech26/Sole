@@ -196,7 +196,8 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
 
       {/* Date Filtering Bar */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-md relative z-30">
-        <DateRangeFilter onChange={setRange} />
+        {/* Wide bar, so put the mode tabs and the date stepper on one row */}
+        <DateRangeFilter onChange={setRange} className="sm:flex-row sm:items-center sm:gap-4" />
       </div>
 
       {/* Finance Stats Grid */}
@@ -208,14 +209,14 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           whileHover={{ y: -4, scale: 1.01 }}
           className="bg-white border border-slate-200 rounded-2xl p-5 shadow-md transition-all duration-300"
         >
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Gross Revenue</span>
+          <span className="text-[0.625rem] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Gross Revenue</span>
           <div className="flex justify-between items-end mt-2">
             <h3 className="text-2xl font-black text-slate-900">
               <RollingNumber value={totalRevenue} isCurrency={true} />
             </h3>
             <ArrowUpRight className="w-5 h-5 text-emerald-500 animate-pulse" />
           </div>
-          <span className="text-[10px] text-slate-400 block mt-2 font-semibold">Sum of active confirmed tours</span>
+          <span className="text-[0.625rem] text-slate-400 block mt-2 font-semibold">Sum of active confirmed tours</span>
         </motion.div>
 
         <motion.div 
@@ -225,14 +226,14 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           whileHover={{ y: -4, scale: 1.01 }}
           className="bg-white border border-slate-200 rounded-2xl p-5 shadow-md transition-all duration-300"
         >
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Total Operational Costs</span>
+          <span className="text-[0.625rem] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Total Operational Costs</span>
           <div className="flex justify-between items-end mt-2">
             <h3 className="text-2xl font-black text-slate-900">
               <RollingNumber value={totalExpensesApproved} isCurrency={true} />
             </h3>
             <ArrowDownRight className="w-5 h-5 text-rose-500" />
           </div>
-          <span className="text-[10px] text-slate-400 block mt-2 font-semibold">Approved fuel, catering, repairs</span>
+          <span className="text-[0.625rem] text-slate-400 block mt-2 font-semibold">Approved fuel, catering, repairs</span>
         </motion.div>
 
         <motion.div 
@@ -242,14 +243,14 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           whileHover={{ y: -4, scale: 1.01 }}
           className="bg-white border border-slate-200 rounded-2xl p-5 shadow-md transition-all duration-300"
         >
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Operating Net Income</span>
+          <span className="text-[0.625rem] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Operating Net Income</span>
           <div className="flex justify-between items-end mt-2">
             <h3 className={`text-2xl font-black ${netIncome < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
               <RollingNumber value={netIncome} isCurrency={true} />
             </h3>
             <Landmark className={`w-5 h-5 ${netIncome < 0 ? 'text-rose-500' : 'text-emerald-500'}`} />
           </div>
-          <span className="text-[10px] text-slate-400 block mt-2 font-semibold">Revenue minus approved expenses</span>
+          <span className="text-[0.625rem] text-slate-400 block mt-2 font-semibold">Revenue minus approved expenses</span>
         </motion.div>
 
         <motion.div 
@@ -259,14 +260,14 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           whileHover={{ y: -4, scale: 1.01 }}
           className="bg-white border border-slate-200 rounded-2xl p-5 shadow-md transition-all duration-300"
         >
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Net Profit Margin</span>
+          <span className="text-[0.625rem] font-extrabold uppercase tracking-wider text-slate-500 block font-sans">Net Profit Margin</span>
           <div className="flex justify-between items-end mt-2">
             <h3 className={`text-2xl font-black ${marginPercentage < 0 ? 'text-rose-600' : 'text-orange-600'}`}>
               <RollingNumber value={marginPercentage} />%
             </h3>
             <CirclePercent className={`w-5 h-5 ${marginPercentage < 0 ? 'text-rose-500' : 'text-orange-600'}`} />
           </div>
-          <span className="text-[10px] text-slate-400 block mt-2 font-semibold">High yield luxury service model</span>
+          <span className="text-[0.625rem] text-slate-400 block mt-2 font-semibold">High yield luxury service model</span>
         </motion.div>
       </div>
 
@@ -310,9 +311,9 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[500px]">
+            <table className="w-full text-left text-xs min-w-[31.25rem]">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[0.625rem] font-bold">
                   <th className="pb-3">Reference</th>
                   <th className="pb-3">Category</th>
                   <th className="pb-3">Date</th>
@@ -350,7 +351,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                               <Eye className="w-3.5 h-3.5" />
                             </button>
                           ) : (
-                            <span className="text-slate-350 text-[10px]">-</span>
+                            <span className="text-slate-350 text-[0.625rem]">-</span>
                           )}
                         </td>
                         <td className="py-3 text-center">
@@ -388,9 +389,9 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md">
         <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-800 mb-4 font-sans">Active Booking Receipts & Payment Auditing</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[700px]">
+          <table className="w-full text-left text-xs min-w-[43.75rem]">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+              <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[0.625rem] font-bold">
                 <th className="pb-3">Receipt Code</th>
                 <th className="pb-3">Client</th>
                 <th className="pb-3">Tour Name</th>
@@ -408,7 +409,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                   <td className="py-3.5 text-slate-500 font-semibold">{b.travelDate}</td>
                   <td className="py-3.5 text-right font-black text-slate-900">€{b.amount.toFixed(2)}</td>
                   <td className="py-3.5 text-center">
-                    <span className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider border ${
+                    <span className={`inline-block px-2.5 py-1 rounded-full text-[0.5625rem] font-extrabold uppercase tracking-wider border ${
                       b.paymentStatus === 'Paid' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' :
                       b.paymentStatus === 'Partially Paid' ? 'bg-orange-50 border-orange-200 text-orange-600' :
                       'bg-rose-50 border-rose-200 text-rose-600'
@@ -428,7 +429,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         <AnimatePresence>
           {showAddForm && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => {
                 setShowAddForm(false);
                 setEditingExpense(null);
@@ -465,7 +466,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
 
                 <form onSubmit={handleFormSubmit} className="space-y-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Category</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Category</label>
                     <select
                       value={newCategory}
                       onChange={e => setNewCategory(e.target.value as ExpenseCategory)}
@@ -484,7 +485,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                       exit={{ opacity: 0, height: 0 }}
                       className="flex flex-col gap-1.5"
                     >
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Specify Custom Category *</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Specify Custom Category *</label>
                       <input
                         type="text"
                         required
@@ -498,7 +499,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Amount (€) *</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Amount (€) *</label>
                       <input
                         type="number"
                         step="0.01"
@@ -510,13 +511,13 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Date</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Date</label>
                       <CustomDatePicker value={newDate} onChange={setNewDate} type="date" />
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description *</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Description *</label>
                     <input
                       type="text"
                       required
@@ -528,7 +529,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice / Receipt Attachment</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Invoice / Receipt Attachment</label>
                     <input
                       type="text"
                       value={receiptUrl}
@@ -536,7 +537,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
                       placeholder="Paste an image URL or upload a file below"
                       className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500 focus:bg-white"
                     />
-                    <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 hover:border-orange-400 rounded-xl py-2 cursor-pointer hover:bg-slate-50 transition group text-[11px] font-bold text-slate-500 group-hover:text-orange-600">
+                    <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 hover:border-orange-400 rounded-xl py-2 cursor-pointer hover:bg-slate-50 transition group text-[0.6875rem] font-bold text-slate-500 group-hover:text-orange-600">
                       <Upload className="w-3.5 h-3.5" />
                       <span>{receiptUploading ? 'Uploading…' : 'Upload receipt image'}</span>
                       <input
@@ -591,7 +592,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         <AnimatePresence>
           {deleteExpenseConfirmId && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteExpenseConfirmId(null)}
             >
               <motion.div 
@@ -637,7 +638,7 @@ export default function FinanceView({ bookings, onUpdateBookingPaymentStatus }: 
         <AnimatePresence>
           {activeReceiptUrl && (
             <div 
-              className="fixed inset-0 bg-slate-950/40 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4 cursor-zoom-out"
+              className="fixed inset-0 bg-slate-950/40 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4 cursor-zoom-out"
               onClick={() => setActiveReceiptUrl(null)}
             >
               <motion.div 

@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, CheckCircle, AlertTriangle, AlertCircle, Plus, Edit, Sparkles, CheckSquare } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, AlertCircle, Plus, Edit, Sparkles, CheckSquare, MessageCircle, Check } from 'lucide-react';
 import { Booking, User, GuideProfile } from '../types';
+import { WORKFLOW_STEPS, wfOf, toggleWf, composeWorkflowMessage } from '../utils/workflow';
 import { ViatorParser } from '../utils/parser';
-import { computeNamesComplete } from '../utils/viatorImport';
+import {
+  computeNamesComplete,
+  isPlaceholderName,
+  travelerNameOnly,
+  placeholderForSlot,
+  composeTravelerEntry,
+} from '../utils/viatorImport';
 import CustomDatePicker from './CustomDatePicker';
 import { usePersistentValue } from '../utils/storage';
 import { SEED_GUIDES } from '../utils/seed';
@@ -49,7 +56,11 @@ export default function AddBookingView({
   const [language, setLanguage] = useState('English');
   const [meetingPoint, setMeetingPoint] = useState('');
   const [status, setStatus] = useState<Booking['status']>('Confirmed');
-  const [travelersText, setTravelersText] = useState('');
+  // One manifest entry per seat ("Name (Adult)" / "Guest 3 (Adult)"), kept the
+  // same length as the PAX count so the form can render a box per passenger.
+  const [travelers, setTravelers] = useState<string[]>([]);
+  // Four message-workflow flags; ticked here, persisted with the rest of the form.
+  const [workflow, setWorkflow] = useState<number[]>([0, 0, 0, 0]);
 
   // Live directories — read from the shared store so guides/products added in
   // their own views (or another tab) appear here immediately.
@@ -94,13 +105,48 @@ export default function AddBookingView({
         setLanguage(existing.language || 'English');
         setMeetingPoint(existing.meetingPoint || '');
         setStatus(existing.status || 'Confirmed');
-        setTravelersText(existing.travelers ? existing.travelers.join('\n') : '');
+        setTravelers(existing.travelers || []);
+        setWorkflow(wfOf(existing));
       }
     } else {
       // Set empty defaults
       resetForm();
     }
   }, [editBookingRef, bookings]);
+
+  // Keep exactly one manifest seat per passenger. Real names already typed are
+  // preserved by seat index; new or re-typed seats fall back to placeholders.
+  useEffect(() => {
+    const total = Math.max(0, paxAdults) + Math.max(0, paxChildren);
+    setTravelers(prev => {
+      const next = Array.from({ length: total }, (_, i) => {
+        const name = travelerNameOnly(prev[i] || '');
+        return composeTravelerEntry(isPlaceholderName(name) ? '' : name, i, paxAdults);
+      });
+      // Skip the state write when nothing actually moved, so this effect can't
+      // ping-pong with the edit-load effect above.
+      return next.length === prev.length && next.every((v, i) => v === prev[i]) ? prev : next;
+    });
+  }, [paxAdults, paxChildren]);
+
+  // Seat 0 is the lead traveler, driven by its own field above.
+  const setTravelerName = (index: number, value: string) => {
+    setTravelers(prev => {
+      const next = [...prev];
+      next[index] = composeTravelerEntry(value, index, paxAdults);
+      return next;
+    });
+  };
+
+  // Seat 0's name lives in the Lead Traveler field, so read it from there
+  // rather than from the manifest entry — one source of truth per name.
+  const seatName = (i: number) => (i === 0 ? leadTraveler.trim() : travelerNameOnly(travelers[i] || ''));
+  const isSeatNamed = (i: number) => {
+    const n = seatName(i);
+    return !!n && !isPlaceholderName(n);
+  };
+  const namedCount = travelers.reduce((acc, _t, i) => acc + (isSeatNamed(i) ? 1 : 0), 0);
+  const missingCount = Math.max(0, travelers.length - namedCount);
 
   // Handle automatic conflict checking
   useEffect(() => {
@@ -141,7 +187,8 @@ export default function AddBookingView({
     setLanguage('English');
     setMeetingPoint('');
     setStatus('Confirmed');
-    setTravelersText('');
+    setTravelers([]);
+    setWorkflow([0, 0, 0, 0]);
     setPasteText('');
     setParserStatus(null);
     setGlowState(false);
@@ -188,7 +235,7 @@ export default function AddBookingView({
           if (parsed.amount) setAmount(parsed.amount);
           
           if (parsed.travelers && parsed.travelers.length > 0) {
-            setTravelersText(parsed.travelers.join('\n'));
+            setTravelers(parsed.travelers);
           }
 
           setParserStatus({
@@ -241,14 +288,16 @@ export default function AddBookingView({
       return;
     }
 
-    const travelers = travelersText
-      .split('\n')
-      .map(t => t.trim())
-      .filter(Boolean);
+    // Rebuild the manifest from the per-seat boxes. Seat 0 always takes the
+    // Lead Traveler field; empty boxes fall back to their placeholder label so
+    // the seat is still counted as unnamed rather than silently disappearing.
+    const finalTravelers = travelers.map((t, i) =>
+      composeTravelerEntry(i === 0 ? leadTraveler : travelerNameOnly(t), i, paxAdults)
+    );
 
     // Track whether all passenger names have been filled in (no placeholders),
     // so the schedule board's name-lock radar can stop flagging this booking.
-    const namesComplete = computeNamesComplete(travelers);
+    const namesComplete = computeNamesComplete(finalTravelers);
 
     // When editing, spread the existing record first so fields the form does not
     // expose (notes, serviceLineItems, namesLocked, currency, driver, etc.) are
@@ -265,7 +314,7 @@ export default function AddBookingView({
       travelDate,
       tourTime,
       leadTraveler: leadTraveler.trim(),
-      travelers,
+      travelers: finalTravelers,
       paxCount: { adults: paxAdults, children: paxChildren },
       phone: phone.trim(),
       language,
@@ -279,6 +328,7 @@ export default function AddBookingView({
       okStatus: status === 'Confirmed',
       checkedInGuests: existing?.checkedInGuests || [],
       namesComplete,
+      workflow,
     };
 
     onSaveBooking(updatedBooking);
@@ -442,21 +492,6 @@ export default function AddBookingView({
                 />
               </div>
 
-              {/* Lead Traveler */}
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lead Traveler Name</label>
-                <input
-                  type="text"
-                  required
-                  value={leadTraveler}
-                  onChange={(e) => setLeadTraveler(e.target.value)}
-                  placeholder="Lead Guest Name"
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
-                    glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
-                  }`}
-                />
-              </div>
-
               {/* Phone */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phone Number</label>
@@ -567,23 +602,129 @@ export default function AddBookingView({
                 />
               </div>
 
-              {/* Full Travelers Manifest list text */}
+              {/* ─── Passenger names: one box per seat ─── */}
               <div className="flex flex-col gap-2 sm:col-span-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Full Travelers Manifest (Names with brackets: Adult/Child)
-                </label>
-                <p className="text-[11px] text-slate-400 font-medium -mt-1">
-                  Viator only provides the lead passenger. Replace placeholders like <span className="font-mono text-orange-600">Guest 2 (Adult)</span> / <span className="font-mono text-orange-600">Child 1 (Child)</span> with the real passport names — one per line.
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Passenger Names
+                  </label>
+                  {travelers.length > 0 && (
+                    <span className={`px-2 py-0.5 rounded-full text-[0.625rem] font-extrabold uppercase tracking-wide border ${
+                      missingCount > 0
+                        ? 'bg-amber-50 border-amber-200 text-amber-600'
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                    }`}>
+                      {missingCount > 0
+                        ? `${missingCount} name${missingCount === 1 ? '' : 's'} pending`
+                        : `All ${travelers.length} names in`}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[0.6875rem] text-slate-400 font-medium -mt-1">
+                  Viator only provides the lead passenger. Type each remaining passport name exactly as it appears on their ID — the Adult / Child tag is applied automatically. Boxes left empty stay flagged as pending.
                 </p>
-                <textarea
-                  value={travelersText}
-                  onChange={(e) => setTravelersText(e.target.value)}
-                  placeholder="John Doe (Adult)&#10;Jane Doe (Adult)&#10;Jack Doe (Child)"
-                  rows={4}
-                  className={`w-full bg-white/50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
-                    glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
-                  }`}
-                />
+
+                {travelers.length === 0 ? (
+                  <div className="text-[0.6875rem] text-slate-400 font-semibold border border-dashed border-slate-200 rounded-xl px-4 py-3">
+                    Set the Adult / Child PAX above to add passenger name boxes.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {travelers.map((t, i) => {
+                      const isChild = i >= paxAdults;
+                      const named = isSeatNamed(i);
+                      return (
+                        <div key={i} className="flex flex-col gap-1">
+                          <label className="text-[0.5625rem] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <span>Passenger {i + 1}</span>
+                            <span className={`px-1.5 py-px rounded font-black ${
+                              isChild ? 'bg-indigo-50 text-indigo-500' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {isChild ? 'Child' : 'Adult'}
+                            </span>
+                            {i === 0 && <span className="px-1.5 py-px rounded bg-orange-50 text-orange-500 font-black">Lead</span>}
+                          </label>
+                          <input
+                            type="text"
+                            required={i === 0}
+                            value={i === 0 ? leadTraveler : travelerNameOnly(t)}
+                            onChange={(e) => (i === 0
+                              ? setLeadTraveler(e.target.value)
+                              : setTravelerName(i, e.target.value))}
+                            placeholder={placeholderForSlot(i, paxAdults)}
+                            className={`w-full bg-white/50 border rounded-xl px-3.5 py-2.5 text-sm text-slate-800 font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 ${
+                              named
+                                ? 'border-slate-200/80'
+                                : 'border-amber-200 bg-amber-50/40 placeholder-amber-500/70'
+                            } ${glowState ? 'ring-2 ring-emerald-500 border-emerald-500' : ''}`}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ─── Message workflow: tick each stage as it is completed ─── */}
+            <div className="pt-6 border-t border-slate-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Message Workflow</label>
+                <span className="text-[0.6875rem] font-extrabold text-slate-400">
+                  {workflow.filter(Boolean).length}/4 done
+                </span>
+              </div>
+              <p className="text-[0.6875rem] text-slate-400 font-medium -mt-1">
+                Tick a stage once that message has gone out. Use the WhatsApp button to compose it for this traveler.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {WORKFLOW_STEPS.map((step, i) => {
+                  const on = !!workflow[i];
+                  return (
+                    <div key={step.key} className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setWorkflow(w => toggleWf(w, i))}
+                        aria-pressed={on}
+                        title={`Mark "${step.label}" as ${on ? 'pending' : 'done'}`}
+                        className={`flex-1 flex items-center gap-2.5 border rounded-xl px-3 py-2.5 transition cursor-pointer text-left ${
+                          on
+                            ? 'border-orange-200 bg-orange-50/60 hover:bg-orange-50'
+                            : 'border-slate-200/80 bg-white/50 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition ${
+                          on ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-400'
+                        }`}>
+                          {on
+                            ? <Check className="w-3 h-3" strokeWidth={3.5} />
+                            : <span className="text-[0.5625rem] font-black">{step.key}</span>}
+                        </span>
+                        <span className="flex-1 text-xs font-bold text-slate-700">{step.label}</span>
+                        <span className={`text-[0.625rem] font-extrabold ${on ? 'text-orange-600' : 'text-slate-400'}`}>
+                          {on ? 'Done' : 'Pending'}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => composeWorkflowMessage(
+                          {
+                            ...(bookings.find(b => b.bookingRef === editBookingRef) || {} as Booking),
+                            bookingRef, tourName, travelDate, tourTime,
+                            leadTraveler: leadTraveler.trim(), phone: phone.trim(), language,
+                          },
+                          i
+                        )}
+                        title="Compose this message in WhatsApp"
+                        aria-label={`Compose "${step.label}" in WhatsApp`}
+                        className="w-9 h-9 shrink-0 rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition cursor-pointer flex items-center justify-center"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

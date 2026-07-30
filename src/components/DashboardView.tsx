@@ -156,16 +156,16 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
                     <h4 className="text-sm font-bold text-theme-text truncate">{b.leadTraveler}</h4>
                     <p className="text-xs text-theme-muted truncate max-w-md mt-0.5">{b.tourName}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="font-mono text-[10px] text-orange-600 font-bold">{b.bookingRef}</span>
-                      <span className="text-[10px] text-theme-muted/50">•</span>
-                      <span className="text-[10px] text-theme-muted font-medium">{b.travelDate}</span>
+                      <span className="font-mono text-[0.625rem] text-orange-600 font-bold">{b.bookingRef}</span>
+                      <span className="text-[0.625rem] text-theme-muted/50">•</span>
+                      <span className="text-[0.625rem] text-theme-muted font-medium">{b.travelDate}</span>
                     </div>
                   </div>
                   <div className="text-right shrink-0 ml-4">
                     {currentUser.role === 'manager' && (
                       <p className="text-sm font-black text-theme-text mb-1">€{b.amount.toFixed(2)}</p>
                     )}
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[0.625rem] font-extrabold uppercase tracking-wider border ${
                       b.status === 'Confirmed' ? 'bg-emerald-600 border-transparent text-white' :
                       b.status === 'Modified' ? 'bg-indigo-600 border-transparent text-white' :
                       b.status === 'Pending' ? 'bg-orange-600 border-transparent text-white' :
@@ -248,7 +248,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
               {/* Inner Hole text */}
               <div className="absolute inset-0 flex flex-col justify-center items-center text-center">
                 <span className="text-2xl font-black text-theme-text leading-none">{totalCount}</span>
-                <span className="text-[9px] font-bold text-theme-muted uppercase tracking-widest mt-1">Total</span>
+                <span className="text-[0.5625rem] font-bold text-theme-muted uppercase tracking-widest mt-1">Total</span>
               </div>
             </div>
 
@@ -292,7 +292,7 @@ export default function DashboardView({ bookings, currentUser, onAddBookings, on
 
       {/* Viator daily report importer — available to booking managers (manager + operations) */}
       {(currentUser.role === 'manager' || currentUser.role === 'operations') && (
-        <ViatorImportCard bookings={bookings} onAddBookings={onAddBookings} />
+        <ViatorImportCard bookings={bookings} currentUser={currentUser} onAddBookings={onAddBookings} />
       )}
     </div>
   );

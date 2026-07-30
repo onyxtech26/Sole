@@ -3,7 +3,7 @@
 // The hybrid store (utils/storage.ts) and the seed script both use this so the
 // mapping lives in exactly one place.
 
-import { Booking, GuideProfile, Customer, Expense } from '../types';
+import { Booking, GuideProfile, Customer, Expense, ImportBatch } from '../types';
 import type { Product } from '../components/ProductsView';
 import type { WhatsappTemplate } from '../utils/whatsappTemplates';
 
@@ -17,6 +17,13 @@ export interface EntityConfig<T = any> {
 }
 
 const num = (v: any, d = 0) => (v === null || v === undefined || v === '' ? d : Number(v));
+
+// The four message-workflow flags are always stored as a length-4 array of 0/1,
+// so a short or malformed row can never make the table render a ragged column.
+export const normalizeWorkflow = (v: any): number[] => {
+  const src = Array.isArray(v) ? v : [];
+  return [0, 1, 2, 3].map(i => (src[i] ? 1 : 0));
+};
 
 // ---- Booking ----
 export const bookingFromRow = (r: any): Booking => ({
@@ -46,6 +53,7 @@ export const bookingFromRow = (r: any): Booking => ({
   tourGradeCode: r.tour_grade_code ?? '',
   tourGradeTitle: r.tour_grade_title ?? '',
   source: r.source ?? 'manual',
+  workflow: normalizeWorkflow(r.workflow),
 });
 
 export const bookingToRow = (b: Booking): any => ({
@@ -76,6 +84,7 @@ export const bookingToRow = (b: Booking): any => ({
   tour_grade_code: b.tourGradeCode ?? '',
   tour_grade_title: b.tourGradeTitle ?? '',
   source: b.source ?? 'manual',
+  workflow: normalizeWorkflow(b.workflow),
 });
 
 // ---- Guide ----
@@ -109,6 +118,7 @@ const productFromRow = (r: any): Product => ({
   label: r.label,
   defaultCap: num(r.default_cap, 7),
   grades: Array.isArray(r.grades) ? r.grades : [],
+  image: r.image ?? '',
 });
 const productToRow = (p: Product): any => ({
   code: p.code,
@@ -116,6 +126,37 @@ const productToRow = (p: Product): any => ({
   label: p.label,
   default_cap: p.defaultCap ?? 7,
   grades: p.grades ?? [],
+  image: p.image ?? '',
+});
+
+// ---- Import Batch (append-only Viator upload log) ----
+const importFromRow = (r: any): ImportBatch => ({
+  id: r.id,
+  fileName: r.file_name ?? '',
+  fileSize: num(r.file_size),
+  importedAt: r.imported_at ?? '',
+  importedByName: r.imported_by_name ?? '',
+  rowsTotal: num(r.rows_total),
+  rowsAdded: num(r.rows_added),
+  rowsUpdated: num(r.rows_updated),
+  rowsUnchanged: num(r.rows_unchanged),
+  rowsCancelled: num(r.rows_cancelled),
+  rowsInvalid: num(r.rows_invalid),
+  source: r.source ?? 'viator',
+});
+const importToRow = (b: ImportBatch): any => ({
+  id: b.id,
+  file_name: b.fileName ?? '',
+  file_size: b.fileSize ?? 0,
+  imported_at: b.importedAt || null,
+  imported_by_name: b.importedByName ?? '',
+  rows_total: b.rowsTotal ?? 0,
+  rows_added: b.rowsAdded ?? 0,
+  rows_updated: b.rowsUpdated ?? 0,
+  rows_unchanged: b.rowsUnchanged ?? 0,
+  rows_cancelled: b.rowsCancelled ?? 0,
+  rows_invalid: b.rowsInvalid ?? 0,
+  source: b.source ?? 'viator',
 });
 
 // ---- Customer ----
@@ -241,6 +282,10 @@ export const ENTITIES: Record<string, EntityConfig> = {
   sole_whatsapp_templates: {
     table: 'whatsapp_templates', pk: 'id', pkOf: (t: WhatsappTemplate) => t.id,
     fromRow: templateFromRow, toRow: templateToRow, orderBy: 'sort',
+  },
+  sole_imports: {
+    table: 'import_batches', pk: 'id', pkOf: (b: ImportBatch) => b.id,
+    fromRow: importFromRow, toRow: importToRow, orderBy: 'imported_at',
   },
 };
 

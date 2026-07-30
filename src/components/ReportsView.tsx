@@ -34,7 +34,7 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
     <div className="space-y-6 animate-fade-in print:p-0 print:m-0 print:bg-white print:text-black relative z-10">
       {/* Controls header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-end bg-white border border-slate-200 p-5 rounded-2xl shadow-md print:hidden">
-        <div className="flex flex-col gap-1.5 w-full sm:max-w-[200px]">
+        <div className="flex flex-col gap-1.5 w-full sm:max-w-[12.5rem]">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Operational Date</label>
           <CustomDatePicker value={reportDate} onChange={setReportDate} type="date" />
         </div>
@@ -49,7 +49,7 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
       </div>
 
       {/* Printable Report Document Card */}
-      <div className="bg-white text-slate-950 rounded-2xl p-8 md:p-12 shadow-xl min-h-[700px] border border-slate-200/80 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black">
+      <div className="bg-white text-slate-950 rounded-2xl p-8 md:p-12 shadow-xl min-h-[43.75rem] border border-slate-200/80 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black">
         {/* Header bar */}
         <div className="border-b-2 border-slate-200 pb-5 mb-8 flex justify-between items-start gap-4">
           <div>
@@ -65,17 +65,17 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
         {/* Operational KPI summary widgets */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
           <div className="border border-slate-200 bg-slate-50 p-5 rounded-lg">
-            <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Scheduled Tours</p>
+            <p className="text-[0.625rem] uppercase font-bold text-slate-500 tracking-wider mb-1">Scheduled Tours</p>
             <h3 className="text-2xl font-extrabold text-slate-900">{totalToursCount}</h3>
           </div>
 
           <div className="border border-slate-200 bg-slate-50 p-5 rounded-lg">
-            <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Total Travelers (PAX)</p>
+            <p className="text-[0.625rem] uppercase font-bold text-slate-500 tracking-wider mb-1">Total Travelers (PAX)</p>
             <h3 className="text-2xl font-extrabold text-slate-900">{totalTravelersCount}</h3>
           </div>
 
           <div className="border border-slate-200 bg-slate-50 p-5 rounded-lg">
-            <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Est. Daily Revenue</p>
+            <p className="text-[0.625rem] uppercase font-bold text-slate-500 tracking-wider mb-1">Est. Daily Revenue</p>
             <h3 className="text-2xl font-extrabold text-slate-900">
               {currentUser.role !== 'manager' ? 'REDACTED' : `€${totalRevenueSum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </h3>
@@ -96,14 +96,14 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-100 border-b-2 border-slate-300 text-slate-700 font-bold whitespace-nowrap">
-                  <th className="p-3 pl-4 w-[110px] whitespace-nowrap">Reference</th>
-                  <th className="p-3 w-[70px] whitespace-nowrap">Time</th>
+                  <th className="p-3 pl-4 w-[6.875rem] whitespace-nowrap">Reference</th>
+                  <th className="p-3 w-[4.375rem] whitespace-nowrap">Time</th>
                   <th className="p-3 whitespace-nowrap">Tour Details</th>
                   <th className="p-3 whitespace-nowrap">Lead Client</th>
-                  <th className="p-3 text-center w-[120px] whitespace-nowrap">PAX</th>
+                  <th className="p-3 text-center w-[7.5rem] whitespace-nowrap">PAX</th>
                   <th className="p-3 whitespace-nowrap">Travelers Manifest</th>
                   <th className="p-3 whitespace-nowrap">Phone</th>
-                  {currentUser.role === 'manager' && <th className="p-3 w-[95px] text-right whitespace-nowrap">Payout</th>}
+                  {currentUser.role === 'manager' && <th className="p-3 w-[5.9375rem] text-right whitespace-nowrap">Payout</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-slate-700">
@@ -111,18 +111,18 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
                   <tr key={idx} className="hover:bg-slate-50 transition whitespace-nowrap">
                     <td className="p-3 pl-4 font-mono font-bold text-slate-900 whitespace-nowrap">{b.bookingRef}</td>
                     <td className="p-3 font-semibold text-slate-900 whitespace-nowrap">{b.tourTime}</td>
-                    <td className="p-3 whitespace-nowrap truncate max-w-[200px]" title={b.tourName}>
+                    <td className="p-3 whitespace-nowrap truncate max-w-[12.5rem]" title={b.tourName}>
                       <span className="font-bold text-slate-900">{b.tourName}</span>
-                      <span className="text-[10px] text-slate-500 ml-1.5">
+                      <span className="text-[0.625rem] text-slate-500 ml-1.5">
                         (Guide: {b.assignedGuide || 'Unassigned'})
                       </span>
                     </td>
                     <td className="p-3 font-bold text-slate-900 whitespace-nowrap">{b.leadTraveler}</td>
                     <td className="p-3 text-center whitespace-nowrap">
                       <span className="font-bold text-slate-950">{b.paxCount.adults + b.paxCount.children} PAX </span>
-                      <span className="text-[9px] text-slate-500">({b.paxCount.adults}A/{b.paxCount.children}C)</span>
+                      <span className="text-[0.5625rem] text-slate-500">({b.paxCount.adults}A/{b.paxCount.children}C)</span>
                     </td>
-                    <td className="p-3 text-slate-600 max-w-[180px] truncate whitespace-nowrap" title={b.travelers && b.travelers.length > 0 ? b.travelers.join(', ') : b.leadTraveler}>
+                    <td className="p-3 text-slate-600 max-w-[11.25rem] truncate whitespace-nowrap" title={b.travelers && b.travelers.length > 0 ? b.travelers.join(', ') : b.leadTraveler}>
                       {b.travelers && b.travelers.length > 0 ? b.travelers.join(', ') : b.leadTraveler}
                     </td>
                     <td className="p-3 font-mono whitespace-nowrap">{b.phone || 'N/A'}</td>
@@ -139,7 +139,7 @@ export default function ReportsView({ bookings, currentUser }: ReportsViewProps)
         )}
 
         {/* Footer info stamp */}
-        <div className="mt-12 pt-5 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-400 font-medium">
+        <div className="mt-12 pt-5 border-t border-slate-200 flex justify-between items-center text-[0.625rem] text-slate-400 font-medium">
           <p>© Sole Travels Reservation Dashboard. Internal Operational Manifest.</p>
           <p>Page 1 of 1</p>
         </div>

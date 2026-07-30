@@ -18,6 +18,27 @@
   --color-theme-gradient-end: var(--gradient-end);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Global UI scale.
+
+   The panel is designed to read at what a browser calls 90% zoom — denser
+   tables (the Reservations ledger fits without horizontal scrolling), and a
+   tighter, more premium rhythm overall.
+
+   Every size in the app is expressed in rem, so moving the root font size
+   moves the entire interface as one: type, padding, gaps, icon boxes, radii
+   and fixed widths all scale together. Percent (not px) is used so a user who
+   has raised their browser's default font size still gets that preference,
+   scaled — this stays accessible where a hard `zoom: 0.9` would not.
+
+   Deliberately NOT `zoom`: viewport units (h-screen) and fixed-position modal
+   overlays do not scale with it, which would leave the shell short of the
+   window and the backdrops shy of full coverage.
+   ──────────────────────────────────────────────────────────────────────────── */
+html {
+  font-size: 90%;
+}
+
 /* Base style resets */
 html, body {
   background-color: var(--bg-primary, #020617);

@@ -42,7 +42,7 @@ export default function GuidePortalView({
       {/* Header bar */}
       <div className="flex justify-between items-center bg-white border border-slate-200 p-5 rounded-3xl shadow-md">
         <div>
-          <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest block font-sans">Guide Manifest Portal</span>
+          <span className="text-[0.625rem] font-bold text-orange-600 uppercase tracking-widest block font-sans">Guide Manifest Portal</span>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-1 font-sans">My Tour Schedule</h1>
           <p className="text-slate-500 text-xs font-semibold mt-1">Hello, <span className="font-bold text-orange-600">{currentUser.username}</span></p>
         </div>
@@ -87,10 +87,10 @@ export default function GuidePortalView({
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 leading-tight font-sans">{b.tourName}</h3>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <span className="text-[10px] font-mono text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-lg border border-orange-100">
+                    <span className="text-[0.625rem] font-mono text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-lg border border-orange-100">
                       Ref: {b.bookingRef}
                     </span>
-                    <span className="text-[10px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 border border-slate-100">
+                    <span className="text-[0.625rem] text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 border border-slate-100">
                       <Globe className="w-3 h-3 text-orange-500" /> Language: {b.language}
                     </span>
                   </div>
@@ -114,7 +114,7 @@ export default function GuidePortalView({
 
               {/* Passenger table checklists */}
               <div className="space-y-2.5 border-t border-slate-100 pt-4">
-                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Passenger Check-In Checklist</h4>
+                <h4 className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-widest">Passenger Check-In Checklist</h4>
                 <div className="overflow-hidden border border-slate-200/80 rounded-2xl bg-white/50 divide-y divide-slate-100">
                   {b.travelers && b.travelers.length > 0 ? (
                     b.travelers.map((traveler, index) => {

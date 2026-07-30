@@ -134,6 +134,43 @@ export function computeNamesComplete(travelers: string[]): boolean {
   return !travelers.some(isPlaceholderName);
 }
 
+// ─── Manifest entry helpers ─────────────────────────────────────────────────
+// A manifest entry is always "<name> (Adult)" or "<name> (Child)". These keep
+// that format in one place so the booking form can edit names seat-by-seat
+// without every caller re-implementing the tag handling.
+
+/** Strip the trailing "(Adult)" / "(Child)" tag: "Guest 2 (Adult)" -> "Guest 2". */
+export function travelerNameOnly(entry: string): string {
+  return (entry || '').replace(/\s*\((?:Adult|Child)\)\s*$/i, '').trim();
+}
+
+/** The auto-generated label for seat `index` — matches buildTravelers(). */
+export function placeholderForSlot(index: number, adults: number): string {
+  if (index === 0) return 'Lead Traveler';
+  return index < adults ? `Guest ${index + 1}` : `Child ${index - adults + 1}`;
+}
+
+/** Compose a manifest entry from a typed name and its seat position. */
+export function composeTravelerEntry(name: string, index: number, adults: number): string {
+  const type = index < adults ? 'Adult' : 'Child';
+  const n = (name || '').trim();
+  return `${n || placeholderForSlot(index, adults)} (${type})`;
+}
+
+/**
+ * How many seats still lack a real passport name. Counts both placeholder
+ * entries and seats the manifest never got an entry for, so a short/empty
+ * travelers array still reports the true shortfall against the PAX count.
+ */
+export function countMissingNames(
+  b: { travelers?: string[]; paxCount: { adults: number; children: number } }
+): number {
+  const total = b.paxCount.adults + b.paxCount.children;
+  const list = b.travelers || [];
+  const missingInList = list.slice(0, total).filter(isPlaceholderName).length;
+  return missingInList + Math.max(0, total - list.length);
+}
+
 export interface RawRow { [header: string]: any }
 
 export interface TransformResult {

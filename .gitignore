@@ -8,3 +8,9 @@ coverage/
 !.env.example
 
 .vercel
+
+# Generated knowledge-graph output (rebuildable with `graphify`)
+graphify-out/
+
+# Machine-specific Claude Code permissions; .claude/launch.json IS shared
+.claude/settings.local.json

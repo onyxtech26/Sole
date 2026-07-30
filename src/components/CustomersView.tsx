@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Mail, Phone, Globe, Star, ShieldCheck, Plus, FileText, CheckCircle2, Award, ClipboardList, Trash2, X, Users } from 'lucide-react';
+import { Search, Mail, Phone, Globe, Star, ShieldCheck, Plus, FileText, CheckCircle2, Award, ClipboardList, Trash2, X, Users, Pencil } from 'lucide-react';
 import { Customer } from '../types';
 import { SEED_CUSTOMERS } from '../utils/seed';
 import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
 import { writeStore } from '../utils/storage';
+import { COUNTRIES, flagOf, countryByIso, countryByName, splitPhone, joinPhone } from '../utils/countries';
 
 const CUSTOMERS_STORAGE_KEY = 'sole_customers';
 
@@ -12,15 +13,17 @@ export default function CustomersView() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-  
-  // Create / edit state
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newCustomerName, setNewCustomerName] = useState('');
-  const [newCustomerEmail, setNewCustomerEmail] = useState('');
-  const [newCustomerPhone, setNewCustomerPhone] = useState('');
-  const [newCustomerCountry, setNewCustomerCountry] = useState('United States');
-  const [newCustomerNotes, setNewCustomerNotes] = useState('');
-  const [newCustomerPrefs, setNewCustomerPrefs] = useState('');
+
+  // One form drives both onboarding and editing; `editingId` picks the mode.
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formPhoneIso, setFormPhoneIso] = useState('US');
+  const [formPhoneNumber, setFormPhoneNumber] = useState('');
+  const [formCountry, setFormCountry] = useState('United States');
+  const [formNotes, setFormNotes] = useState('');
+  const [formPrefs, setFormPrefs] = useState('');
 
   // Delete confirm state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -44,41 +47,86 @@ export default function CustomersView() {
     writeStore(CUSTOMERS_STORAGE_KEY, list);
   };
 
-  const handleAddCustomer = (e: React.FormEvent) => {
+  const openCreateForm = () => {
+    setEditingId(null);
+    setFormName('');
+    setFormEmail('');
+    setFormPhoneIso('US');
+    setFormPhoneNumber('');
+    setFormCountry('United States');
+    setFormNotes('');
+    setFormPrefs('');
+    setShowForm(true);
+  };
+
+  const openEditForm = (c: Customer) => {
+    const parsed = splitPhone(c.phone);
+    setEditingId(c.id);
+    setFormName(c.name);
+    setFormEmail(c.email);
+    // Fall back to the client's country when the stored number carries no dial
+    // code, so an existing local number still gets a sensible flag.
+    setFormPhoneIso(parsed.iso || countryByName(c.country)?.iso || '');
+    setFormPhoneNumber(parsed.number);
+    setFormCountry(c.country || '');
+    setFormNotes(c.notes || '');
+    setFormPrefs((c.preferences || []).join(', '));
+    setShowForm(true);
+  };
+
+  // Picking a country fills in the matching dial code, but only while the
+  // number is still empty — never overwrite a number someone already typed.
+  const handleSelectCountry = (name: string) => {
+    setFormCountry(name);
+    if (!formPhoneNumber.trim()) {
+      const match = countryByName(name);
+      if (match) setFormPhoneIso(match.iso);
+    }
+  };
+
+  const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCustomerName || !newCustomerEmail) return;
+    if (!formName.trim() || !formEmail.trim()) return;
 
-    const newCust: Customer = {
-      id: `C-${crypto.randomUUID().slice(0, 8)}`,
-      name: newCustomerName,
-      email: newCustomerEmail,
-      phone: newCustomerPhone,
-      country: newCustomerCountry,
-      travelHistoryCount: 0,
-      preferences: newCustomerPrefs.split(',').map(p => p.trim()).filter(Boolean),
-      documents: [],
-      notes: newCustomerNotes,
-      journey: [
-        {
-          date: new Date().toISOString().split('T')[0],
-          title: 'Account Registered',
-          description: 'Client profile initialized in executive CRM portal.'
-        }
-      ]
-    };
+    const phone = joinPhone(countryByIso(formPhoneIso)?.dial || '', formPhoneNumber);
+    const preferences = formPrefs.split(',').map(p => p.trim()).filter(Boolean);
 
-    const updated = [newCust, ...customers];
-    saveCustomers(updated);
-    setSelectedCustomerId(newCust.id);
-    
-    // Reset Form
-    setNewCustomerName('');
-    setNewCustomerEmail('');
-    setNewCustomerPhone('');
-    setNewCustomerCountry('United States');
-    setNewCustomerNotes('');
-    setNewCustomerPrefs('');
-    setShowAddForm(false);
+    if (editingId) {
+      // Edit: keep journey, documents and travel history untouched.
+      saveCustomers(customers.map(c => c.id === editingId ? {
+        ...c,
+        name: formName.trim(),
+        email: formEmail.trim(),
+        phone,
+        country: formCountry.trim(),
+        preferences,
+        notes: formNotes,
+      } : c));
+    } else {
+      const newCust: Customer = {
+        id: `C-${crypto.randomUUID().slice(0, 8)}`,
+        name: formName.trim(),
+        email: formEmail.trim(),
+        phone,
+        country: formCountry.trim(),
+        travelHistoryCount: 0,
+        preferences,
+        documents: [],
+        notes: formNotes,
+        journey: [
+          {
+            date: new Date().toISOString().split('T')[0],
+            title: 'Account Registered',
+            description: 'Client profile initialized in executive CRM portal.'
+          }
+        ]
+      };
+      saveCustomers([newCust, ...customers]);
+      setSelectedCustomerId(newCust.id);
+    }
+
+    setShowForm(false);
+    setEditingId(null);
   };
 
   const executeDeleteCustomer = (id: string) => {
@@ -129,7 +177,7 @@ export default function CustomersView() {
           <p className="text-slate-500 text-sm mt-1 font-semibold">Manage private travelers, luxury expectations, preferences, and historic journals.</p>
         </div>
         <button
-          onClick={() => setShowAddForm(true)}
+          onClick={openCreateForm}
           className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-5 py-3 rounded-xl text-sm flex items-center gap-2 transition duration-200 shadow-lg shadow-orange-600/15 cursor-pointer transform hover:-translate-y-0.5"
         >
           <Plus className="w-4.5 h-4.5" />
@@ -138,7 +186,7 @@ export default function CustomersView() {
       </div>
 
       {/* CRM Main Split Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-180px)] lg:h-[calc(100vh-200px)] min-h-[500px] overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-180px)] lg:h-[calc(100vh-200px)] min-h-[31.25rem] overflow-hidden">
         {/* Left: Customer Directory List */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05, ease: [0.16, 1, 0.3, 1] }} className="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-5 flex flex-col h-full shadow-md overflow-hidden">
           <div className="relative mb-4">
@@ -181,11 +229,11 @@ export default function CustomersView() {
                           <Star className="w-3.5 h-3.5 text-orange-500 fill-orange-500 shrink-0" />
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-500 font-semibold block truncate mt-0.5">{c.email}</span>
+                      <span className="text-[0.625rem] text-slate-500 font-semibold block truncate mt-0.5">{c.email}</span>
                       <div className="flex items-center gap-1.5 mt-2">
-                        <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider">{c.id}</span>
-                        <span className="text-[9px] text-slate-300 font-bold">•</span>
-                        <span className="text-[9px] font-bold text-orange-600">{c.travelHistoryCount} journeys</span>
+                        <span className="text-[0.5625rem] font-mono text-slate-400 font-bold uppercase tracking-wider">{c.id}</span>
+                        <span className="text-[0.5625rem] text-slate-300 font-bold">•</span>
+                        <span className="text-[0.5625rem] font-bold text-orange-600">{c.travelHistoryCount} journeys</span>
                       </div>
                     </div>
                   </button>
@@ -217,7 +265,7 @@ export default function CustomersView() {
                       <div className="flex items-center gap-2">
                         <h2 className="text-xl font-extrabold text-slate-900 font-sans">{selectedCustomer.name}</h2>
                         {selectedCustomer.travelHistoryCount >= 3 && (
-                          <span className="bg-orange-50 text-orange-600 border border-orange-100 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg flex items-center gap-1">
+                          <span className="bg-orange-50 text-orange-600 border border-orange-100 text-[0.5625rem] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg flex items-center gap-1">
                             <Award className="w-3 h-3" />
                             <span>VIP Tier</span>
                           </span>
@@ -228,13 +276,21 @@ export default function CustomersView() {
                   </div>
 
                   <div className="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end">
-                    <span className="text-[10px] bg-emerald-50 border border-emerald-100 text-emerald-600 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
+                    <span className="text-[0.625rem] bg-emerald-50 border border-emerald-100 text-emerald-600 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5" />
                       <span>Verified HNW</span>
                     </span>
                     <button
+                      onClick={() => openEditForm(selectedCustomer)}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-100 text-slate-500 hover:text-orange-600 text-xs font-bold transition cursor-pointer active:scale-95"
+                      title="Edit Client Profile"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
                       onClick={() => setDeleteConfirmId(selectedCustomer.id)}
-                      className="p-2 rounded-xl bg-slate-50 hover:bg-rose-50 border border-slate-200 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                      className="p-2 rounded-xl bg-slate-50 hover:bg-rose-50 border border-slate-200 text-slate-400 hover:text-rose-600 transition cursor-pointer active:scale-95"
                       title="Delete Client Profile"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -247,7 +303,7 @@ export default function CustomersView() {
                   <div className="bg-white/50 border border-slate-200/60 rounded-xl p-3 flex items-center gap-2.5">
                     <Mail className="w-4.5 h-4.5 text-slate-400 shrink-0" />
                     <div className="min-w-0 flex-grow">
-                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Email</span>
+                      <span className="text-[0.5625rem] text-slate-400 uppercase font-bold tracking-wider">Email</span>
                       <p className="text-xs font-bold text-slate-800 truncate">{selectedCustomer.email}</p>
                     </div>
                   </div>
@@ -255,16 +311,30 @@ export default function CustomersView() {
                   <div className="bg-white/50 border border-slate-200/60 rounded-xl p-3 flex items-center gap-2.5">
                     <Phone className="w-4.5 h-4.5 text-slate-400 shrink-0" />
                     <div className="min-w-0 flex-grow">
-                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Phone</span>
-                      <p className="text-xs font-bold text-slate-800 truncate">{selectedCustomer.phone || 'Confidential'}</p>
+                      <span className="text-[0.5625rem] text-slate-400 uppercase font-bold tracking-wider">Phone</span>
+                      <p className="text-xs font-bold text-slate-800 truncate">
+                        {selectedCustomer.phone ? (
+                          <>
+                            {splitPhone(selectedCustomer.phone).iso && (
+                              <span className="mr-1">{flagOf(splitPhone(selectedCustomer.phone).iso)}</span>
+                            )}
+                            {selectedCustomer.phone}
+                          </>
+                        ) : 'Confidential'}
+                      </p>
                     </div>
                   </div>
 
                   <div className="bg-white/50 border border-slate-200/60 rounded-xl p-3 flex items-center gap-2.5">
                     <Globe className="w-4.5 h-4.5 text-slate-400 shrink-0" />
                     <div className="min-w-0 flex-grow">
-                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Country</span>
-                      <p className="text-xs font-bold text-slate-800 truncate">{selectedCustomer.country}</p>
+                      <span className="text-[0.5625rem] text-slate-400 uppercase font-bold tracking-wider">Country</span>
+                      <p className="text-xs font-bold text-slate-800 truncate">
+                        {countryByName(selectedCustomer.country) && (
+                          <span className="mr-1">{flagOf(countryByName(selectedCustomer.country)!.iso)}</span>
+                        )}
+                        {selectedCustomer.country || 'Not specified'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -278,7 +348,7 @@ export default function CustomersView() {
                   <div className="flex flex-wrap gap-2">
                     {selectedCustomer.preferences && selectedCustomer.preferences.length > 0 ? (
                       selectedCustomer.preferences.map((pref, idx) => (
-                        <span key={idx} className="bg-orange-50 border border-orange-100 text-orange-600 text-[10px] font-extrabold px-2.5 py-1 rounded-xl">
+                        <span key={idx} className="bg-orange-50 border border-orange-100 text-orange-600 text-[0.625rem] font-extrabold px-2.5 py-1 rounded-xl">
                           {pref}
                         </span>
                       ))
@@ -304,7 +374,7 @@ export default function CustomersView() {
                             </div>
                             <span className="text-xs font-bold text-slate-800 truncate">{doc.name}</span>
                           </div>
-                          <button className="text-[10px] text-orange-600 hover:text-orange-700 font-bold hover:underline">
+                          <button className="text-[0.625rem] text-orange-600 hover:text-orange-700 font-bold hover:underline">
                             Download
                           </button>
                         </div>
@@ -338,9 +408,9 @@ export default function CustomersView() {
                   <div className="relative pl-6 border-l border-slate-200 space-y-4 ml-2.5">
                     {selectedCustomer.journey && selectedCustomer.journey.map((j, idx) => (
                       <div key={idx} className="relative">
-                        <div className="absolute -left-[30px] top-1.5 w-2 h-2 rounded-full bg-orange-600 ring-4 ring-white shadow" />
+                        <div className="absolute -left-[1.875rem] top-1.5 w-2 h-2 rounded-full bg-orange-600 ring-4 ring-white shadow" />
                         <div>
-                          <span className="text-[9px] font-mono text-slate-400 font-bold">{j.date}</span>
+                          <span className="text-[0.5625rem] font-mono text-slate-400 font-bold">{j.date}</span>
                           <h5 className="text-xs font-bold text-slate-800 mt-0.5">{j.title}</h5>
                           <p className="text-xs text-slate-500 font-semibold mt-0.5">{j.description}</p>
                         </div>
@@ -357,53 +427,59 @@ export default function CustomersView() {
       </div>      {/* ─── Onboard Client Modal (Overlay click-to-close & smooth animate) ─── */}
       {createPortal(
         <AnimatePresence>
-          {showAddForm && (
-            <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
-              onClick={() => setShowAddForm(false)}
+          {showForm && (
+            <div
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
+              onClick={() => setShowForm(false)}
             >
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 15 }}
                 transition={{ duration: 0.2 }}
-                className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-2xl max-w-2xl w-full relative"
+                className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-2xl max-w-2xl w-full relative max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
-                <button 
-                  onClick={() => setShowAddForm(false)}
+                <button
+                  onClick={() => setShowForm(false)}
                   className="absolute top-5 right-5 p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
 
                 <div className="w-10 h-10 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center mb-4">
-                  <Users className="w-5 h-5 text-orange-600" />
+                  {editingId ? <Pencil className="w-5 h-5 text-orange-600" /> : <Users className="w-5 h-5 text-orange-600" />}
                 </div>
 
-                <h3 className="text-base font-extrabold text-slate-900 font-sans mb-1">Onboard Private Client</h3>
-                <p className="text-slate-450 text-xs font-semibold mb-5">Register a new client profile, set personal preference flags, and save private logs.</p>
-                
-                <form onSubmit={handleAddCustomer} className="space-y-4">
+                <h3 className="text-base font-extrabold text-slate-900 font-sans mb-1">
+                  {editingId ? 'Edit Client Profile' : 'Onboard Private Client'}
+                </h3>
+                <p className="text-slate-450 text-xs font-semibold mb-5">
+                  {editingId
+                    ? 'Update contact details, preference flags and private logs. Journey history and documents are untouched.'
+                    : 'Register a new client profile, set personal preference flags, and save private logs.'}
+                </p>
+
+                <form onSubmit={handleSubmitForm} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Full Name *</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase">Full Name *</label>
                       <input
                         type="text"
                         required
-                        value={newCustomerName}
-                        onChange={e => setNewCustomerName(e.target.value)}
+                        value={formName}
+                        onChange={e => setFormName(e.target.value)}
                         placeholder="Lord Sterling Archer"
                         className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Email Address *</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase">Email Address *</label>
                       <input
                         type="email"
                         required
-                        value={newCustomerEmail}
-                        onChange={e => setNewCustomerEmail(e.target.value)}
+                        value={formEmail}
+                        onChange={e => setFormEmail(e.target.value)}
                         placeholder="archer@sterlingcorp.co"
                         className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500"
                       />
@@ -411,44 +487,73 @@ export default function CustomersView() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Country — drives the dial code below while it is untouched */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Phone Number</label>
-                      <input
-                        type="text"
-                        value={newCustomerPhone}
-                        onChange={e => setNewCustomerPhone(e.target.value)}
-                        placeholder="+1 555-0199"
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500"
-                      />
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase">Country</label>
+                      <select
+                        value={formCountry}
+                        onChange={e => handleSelectCountry(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none cursor-pointer focus:border-orange-500"
+                      >
+                        <option value="">Not specified</option>
+                        {COUNTRIES.map(c => (
+                          <option key={c.iso} value={c.name}>{flagOf(c.iso)} {c.name}</option>
+                        ))}
+                        {/* Keep a legacy free-text country selectable so editing never drops it */}
+                        {formCountry && !countryByName(formCountry) && (
+                          <option value={formCountry}>{formCountry}</option>
+                        )}
+                      </select>
                     </div>
+
+                    {/* Phone — dial code picker + national number */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Country</label>
-                      <input
-                        type="text"
-                        value={newCustomerCountry}
-                        onChange={e => setNewCustomerCountry(e.target.value)}
-                        placeholder="United Kingdom"
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500"
-                      />
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase">Phone Number</label>
+                      <div className="flex gap-2">
+                        <select
+                          value={formPhoneIso}
+                          onChange={e => setFormPhoneIso(e.target.value)}
+                          aria-label="Phone country code"
+                          title={countryByIso(formPhoneIso)?.name || 'No country code'}
+                          className="w-24 shrink-0 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-semibold text-slate-855 outline-none cursor-pointer focus:border-orange-500"
+                        >
+                          <option value="">—</option>
+                          {COUNTRIES.map(c => (
+                            <option key={c.iso} value={c.iso}>{flagOf(c.iso)} {c.dial}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="tel"
+                          value={formPhoneNumber}
+                          onChange={e => setFormPhoneNumber(e.target.value)}
+                          placeholder="331 174 6737"
+                          className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500"
+                        />
+                      </div>
+                      <span className="text-[0.5625rem] font-semibold text-slate-400 mt-0.5">
+                        {formPhoneNumber.trim()
+                          ? `Saved as ${joinPhone(countryByIso(formPhoneIso)?.dial || '', formPhoneNumber)}`
+                          : 'Pick the country code, then type the number.'}
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Private Preferences (comma separated)</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase">Private Preferences (comma separated)</label>
                     <input
                       type="text"
-                      value={newCustomerPrefs}
-                      onChange={e => setNewCustomerPrefs(e.target.value)}
+                      value={formPrefs}
+                      onChange={e => setFormPrefs(e.target.value)}
                       placeholder="Bentley preferred, Bollinger champagne, Extra pillows"
                       className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Confidential Notes</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase">Confidential Notes</label>
                     <textarea
-                      value={newCustomerNotes}
-                      onChange={e => setNewCustomerNotes(e.target.value)}
+                      value={formNotes}
+                      onChange={e => setFormNotes(e.target.value)}
                       placeholder="VIP high net worth client remarks..."
                       rows={3}
                       className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-855 outline-none focus:border-orange-500"
@@ -458,7 +563,7 @@ export default function CustomersView() {
                   <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={() => setShowAddForm(false)}
+                      onClick={() => setShowForm(false)}
                       className="bg-slate-50 border border-slate-200/80 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-100 cursor-pointer active:scale-95 transition"
                     >
                       Cancel
@@ -467,7 +572,7 @@ export default function CustomersView() {
                       type="submit"
                       className="bg-orange-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-orange-700 shadow-md cursor-pointer active:scale-95 transition"
                     >
-                      Save Client Profile
+                      {editingId ? 'Save Changes' : 'Save Client Profile'}
                     </button>
                   </div>
                 </form>
@@ -483,7 +588,7 @@ export default function CustomersView() {
         <AnimatePresence>
           {deleteConfirmId && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteConfirmId(null)}
             >
               <motion.div 

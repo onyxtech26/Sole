@@ -254,7 +254,7 @@ export default function CommandSearch({ bookings, currentUser, onNavigate, class
             <X className="w-3.5 h-3.5" />
           </button>
         ) : (
-          <div className="absolute right-2.5 flex items-center gap-0.5 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-[9px] font-mono text-slate-400 pointer-events-none">
+          <div className="absolute right-2.5 flex items-center gap-0.5 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-[0.5625rem] font-mono text-slate-400 pointer-events-none">
             <Command className="w-2.5 h-2.5" />
             <span>K</span>
           </div>
@@ -263,14 +263,14 @@ export default function CommandSearch({ bookings, currentUser, onNavigate, class
 
       {/* Floating Role-Aware Search Dropdown Popover */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 md:w-[440px] bg-white border border-slate-200/90 rounded-2xl shadow-2xl z-[100] overflow-hidden animate-fade-in max-h-[460px] flex flex-col">
+        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 md:w-[27.5rem] bg-white border border-slate-200/90 rounded-2xl shadow-2xl z-[100] overflow-hidden animate-fade-in max-h-[28.75rem] flex flex-col">
           {/* Header Role indicator */}
           <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-[0.625rem] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-orange-500" />
               Role: <span className="text-orange-600 font-bold uppercase">{currentUser.role}</span>
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">
+            <span className="text-[0.625rem] text-slate-400 font-mono">
               {results.length} result{results.length === 1 ? '' : 's'}
             </span>
           </div>
@@ -281,7 +281,7 @@ export default function CommandSearch({ bookings, currentUser, onNavigate, class
               <div className="p-6 text-center text-slate-400 text-xs">
                 <Search className="w-6 h-6 mx-auto mb-2 opacity-30 text-orange-500" />
                 <p className="font-bold text-slate-600">Global Website Search</p>
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[0.6875rem] text-slate-400 mt-1">
                   Type any keyword to search reservations, clients, catalog, or navigate pages.
                 </p>
               </div>
@@ -302,12 +302,12 @@ export default function CommandSearch({ bookings, currentUser, onNavigate, class
                         {res.title}
                       </span>
                       {res.badge && (
-                        <span className={`px-1.5 py-0.5 rounded border text-[9px] font-extrabold uppercase shrink-0 ${res.badgeColor}`}>
+                        <span className={`px-1.5 py-0.5 rounded border text-[0.5625rem] font-extrabold uppercase shrink-0 ${res.badgeColor}`}>
                           {res.badge}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-500 truncate font-medium">{res.subtitle}</p>
+                    <p className="text-[0.6875rem] text-slate-500 truncate font-medium">{res.subtitle}</p>
                   </div>
                   <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-orange-500 shrink-0 transition group-hover:translate-x-0.5" />
                 </button>

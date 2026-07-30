@@ -173,7 +173,7 @@ export default function GuidesView() {
             </div>
             <div className="min-w-0 flex-grow">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-mono font-bold text-slate-400">{g.id}</span>
+                <span className="text-[0.625rem] font-mono font-bold text-slate-400">{g.id}</span>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => handleOpenEditModal(g)}
@@ -207,7 +207,7 @@ export default function GuidesView() {
             </div>
 
             <div className="flex justify-between items-center text-xs text-slate-500 font-semibold">
-              <span className="font-bold uppercase tracking-wider text-[9px] text-slate-400 font-sans">Rating Scale</span>
+              <span className="font-bold uppercase tracking-wider text-[0.5625rem] text-slate-400 font-sans">Rating Scale</span>
               <div className="flex items-center gap-1">
                 <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                 <span className="font-bold text-slate-700">{g.performanceRating.toFixed(1)}</span>
@@ -216,10 +216,10 @@ export default function GuidesView() {
             </div>
 
             <div>
-              <span className="font-bold uppercase tracking-wider text-[9px] text-slate-400 block mb-1.5 font-sans">Fluent Languages</span>
+              <span className="font-bold uppercase tracking-wider text-[0.5625rem] text-slate-400 block mb-1.5 font-sans">Fluent Languages</span>
               <div className="flex flex-wrap gap-1.5">
                 {g.languages.map((lang, idx) => (
-                  <span key={idx} className="bg-white text-slate-600 border border-slate-200/80 text-[9px] font-bold px-2 py-0.5 rounded">
+                  <span key={idx} className="bg-white text-slate-600 border border-slate-200/80 text-[0.5625rem] font-bold px-2 py-0.5 rounded">
                     {lang}
                   </span>
                 ))}
@@ -227,10 +227,10 @@ export default function GuidesView() {
             </div>
 
             <div>
-              <span className="font-bold uppercase tracking-wider text-[9px] text-slate-400 block mb-1.5 font-sans">{g.role === 'Staff' ? 'Responsibilities' : 'Expert Specialty / Skills'}</span>
+              <span className="font-bold uppercase tracking-wider text-[0.5625rem] text-slate-400 block mb-1.5 font-sans">{g.role === 'Staff' ? 'Responsibilities' : 'Expert Specialty / Skills'}</span>
               <div className="flex flex-wrap gap-1.5">
                 {g.skills.map((skill, idx) => (
-                  <span key={idx} className="bg-orange-50 text-orange-600 text-[9px] font-bold px-2 py-0.5 rounded border border-orange-100">
+                  <span key={idx} className="bg-orange-50 text-orange-600 text-[0.5625rem] font-bold px-2 py-0.5 rounded border border-orange-100">
                     {skill}
                   </span>
                 ))}
@@ -241,11 +241,11 @@ export default function GuidesView() {
 
         {/* Lower Actions panel */}
         <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-          <span className="text-[9px] text-slate-400 font-black tracking-wider font-sans">AVAILABILITY</span>
+          <span className="text-[0.5625rem] text-slate-400 font-black tracking-wider font-sans">AVAILABILITY</span>
           <div className="flex gap-1">
             <button
               onClick={() => toggleAvailability(g.id, 'Active')}
-              className={`text-[8px] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg border transition duration-200 cursor-pointer ${
+              className={`text-[0.5rem] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg border transition duration-200 cursor-pointer ${
                 isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-600 font-bold' : 'bg-slate-50 border-slate-100 text-slate-400 hover:text-slate-800'
               }`}
             >
@@ -253,7 +253,7 @@ export default function GuidesView() {
             </button>
             <button
               onClick={() => toggleAvailability(g.id, 'On Break')}
-              className={`text-[8px] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg border transition duration-200 cursor-pointer ${
+              className={`text-[0.5rem] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg border transition duration-200 cursor-pointer ${
                 isBreak ? 'bg-amber-50 border-amber-200 text-amber-600 font-bold' : 'bg-slate-50 border-slate-100 text-slate-400 hover:text-slate-800'
               }`}
             >
@@ -261,7 +261,7 @@ export default function GuidesView() {
             </button>
             <button
               onClick={() => toggleAvailability(g.id, 'Unavailable')}
-              className={`text-[8px] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg border transition duration-200 cursor-pointer ${
+              className={`text-[0.5rem] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg border transition duration-200 cursor-pointer ${
                 g.availability === 'Unavailable' ? 'bg-rose-50 border-rose-200 text-rose-600 font-bold' : 'bg-slate-50 border-slate-100 text-slate-400 hover:text-slate-800'
               }`}
             >
@@ -311,7 +311,7 @@ export default function GuidesView() {
             className="w-full bg-white/50 border border-slate-200/80 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-800 font-semibold placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white"
           />
         </div>
-        <div className="text-[10px] bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg border border-orange-100 font-bold uppercase flex items-center gap-1.5 select-none shrink-0 self-start md:self-auto">
+        <div className="text-[0.625rem] bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg border border-orange-100 font-bold uppercase flex items-center gap-1.5 select-none shrink-0 self-start md:self-auto">
           <Sparkles className="w-3.5 h-3.5 text-orange-500" />
           <span>Lecturers verified with Academic degrees</span>
         </div>
@@ -324,7 +324,7 @@ export default function GuidesView() {
             <Award className="w-4 h-4 text-orange-600" />
           </div>
           <h2 className="text-lg font-extrabold text-slate-900 font-sans">Tour Guides</h2>
-          <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-100 rounded-full px-2.5 py-1">{guideList.length}</span>
+          <span className="text-[0.625rem] font-bold text-orange-600 bg-orange-50 border border-orange-100 rounded-full px-2.5 py-1">{guideList.length}</span>
         </div>
         {guideList.length === 0 ? (
           <div className="py-10 text-center text-xs text-slate-400 font-semibold border-2 border-dashed border-slate-200 rounded-2xl">No guides match your search.</div>
@@ -342,7 +342,7 @@ export default function GuidesView() {
             <Users className="w-4 h-4 text-slate-700" />
           </div>
           <h2 className="text-lg font-extrabold text-slate-900 font-sans">Operations Staff</h2>
-          <span className="text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-2.5 py-1">{staffList.length}</span>
+          <span className="text-[0.625rem] font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-2.5 py-1">{staffList.length}</span>
         </div>
         {staffList.length === 0 ? (
           <div className="py-10 text-center text-xs text-slate-400 font-semibold border-2 border-dashed border-slate-200 rounded-2xl">No staff match your search.</div>
@@ -358,7 +358,7 @@ export default function GuidesView() {
         <AnimatePresence>
           {showFormModal && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => {
                 setShowFormModal(false);
                 setEditingGuide(null);
@@ -396,7 +396,7 @@ export default function GuidesView() {
                 <form onSubmit={handleFormSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Role *</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Role *</label>
                       <select
                         value={newRole}
                         onChange={e => setNewRole(e.target.value as GuideProfile['role'])}
@@ -407,7 +407,7 @@ export default function GuidesView() {
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Rating (1-5)</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Rating (1-5)</label>
                       <input
                         type="number"
                         step="0.1"
@@ -421,7 +421,7 @@ export default function GuidesView() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name *</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Full Name *</label>
                     <input
                       type="text"
                       required
@@ -433,7 +433,7 @@ export default function GuidesView() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phone Number *</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Phone Number *</label>
                     <input
                       type="tel"
                       required
@@ -445,7 +445,7 @@ export default function GuidesView() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fluent Languages (comma separated)</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Fluent Languages (comma separated)</label>
                     <input
                       type="text"
                       value={newLanguages}
@@ -456,7 +456,7 @@ export default function GuidesView() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Expert Specialty / Skills</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Expert Specialty / Skills</label>
                     <input
                       type="text"
                       value={newSkills}
@@ -467,7 +467,7 @@ export default function GuidesView() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Photo / Avatar</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Photo / Avatar</label>
                     {newImage ? (
                       <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
                         <img 
@@ -480,7 +480,7 @@ export default function GuidesView() {
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-slate-700 truncate">Image Loaded</p>
-                          <p className="text-[9px] text-slate-400 truncate">Base64 ready</p>
+                          <p className="text-[0.5625rem] text-slate-400 truncate">Base64 ready</p>
                         </div>
                         <button
                           type="button"
@@ -494,7 +494,7 @@ export default function GuidesView() {
                       <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 hover:border-orange-400 rounded-xl p-4 cursor-pointer hover:bg-slate-50 transition group">
                         <Upload className="w-6 h-6 text-slate-400 group-hover:text-orange-500 transition mb-1.5" />
                         <span className="text-xs font-bold text-slate-600 group-hover:text-orange-600 transition">Upload Image</span>
-                        <span className="text-[9px] text-slate-400 mt-0.5">Supports SVG, JPG, JPEG, PNG, etc.</span>
+                        <span className="text-[0.5625rem] text-slate-400 mt-0.5">Supports SVG, JPG, JPEG, PNG, etc.</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -552,7 +552,7 @@ export default function GuidesView() {
         <AnimatePresence>
           {deleteConfirmId && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteConfirmId(null)}
             >
               <motion.div 

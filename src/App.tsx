@@ -198,8 +198,16 @@ export default function App() {
     setActiveView('add-booking');
   };
 
-  const handleDeleteBooking = (ref: string) => {
-    const updated = bookings.filter(b => b.bookingRef !== ref);
+  // Bulk delete from the Reservations selection bar — one store write (and so
+  // one Supabase diff) instead of N sequential deletes.
+  const handleDeleteBookings = (refs: string[]) => {
+    const doomed = new Set(refs);
+    saveBookingsState(bookings.filter(b => !doomed.has(b.bookingRef)));
+  };
+
+  // Toggle one of the four message-workflow flags on a reservation.
+  const handleUpdateBookingWorkflow = (ref: string, workflow: number[]) => {
+    const updated = bookings.map(b => (b.bookingRef === ref ? { ...b, workflow } : b));
     saveBookingsState(updated);
   };
 
@@ -248,8 +256,8 @@ export default function App() {
       <div className="fixed inset-0 z-50 bg-[#f8fafc] flex flex-col items-center justify-center text-slate-900 overflow-hidden font-sans">
         {/* Abstract floating background circles inside splash */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-25">
-          <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[90px] animate-blob-float-1" />
-          <div className="absolute bottom-[15%] right-[10%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[90px] animate-blob-float-2" />
+          <div className="absolute top-[10%] left-[10%] w-[21.875rem] h-[21.875rem] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[5.625rem] animate-blob-float-1" />
+          <div className="absolute bottom-[15%] right-[10%] w-[21.875rem] h-[21.875rem] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[5.625rem] animate-blob-float-2" />
         </div>
 
         <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-md">
@@ -282,7 +290,7 @@ export default function App() {
           </motion.p>
 
           {/* Elegant Slim Loading bar */}
-          <div className="w-48 h-[3px] bg-slate-200/80 rounded-full overflow-hidden mt-8">
+          <div className="w-48 h-[0.1875rem] bg-slate-200/80 rounded-full overflow-hidden mt-8">
             <motion.div
               initial={{ width: "0%" }}
               animate={{ width: "100%" }}
@@ -295,7 +303,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
             transition={{ delay: 1.2, duration: 0.5 }}
-            className="text-[9px] font-mono tracking-widest text-slate-400 mt-4 block"
+            className="text-[0.5625rem] font-mono tracking-widest text-slate-400 mt-4 block"
           >
             INITIALIZING CORE OPERATIONS v2.6
           </motion.span>
@@ -328,8 +336,8 @@ export default function App() {
         >
       {/* Abstract floating background circles like the splash screen */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-10">
-        <div className="absolute top-[10%] left-[10%] w-[450px] h-[450px] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[110px] animate-blob-float-1" />
-        <div className="absolute bottom-[15%] right-[10%] w-[450px] h-[450px] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[110px] animate-blob-float-2" />
+        <div className="absolute top-[10%] left-[10%] w-[28.125rem] h-[28.125rem] rounded-full bg-gradient-to-tr from-slate-300 to-orange-200 blur-[6.875rem] animate-blob-float-1" />
+        <div className="absolute bottom-[15%] right-[10%] w-[28.125rem] h-[28.125rem] rounded-full bg-gradient-to-br from-orange-200 to-amber-100 blur-[6.875rem] animate-blob-float-2" />
       </div>
 
       {/* Mobile top bar */}
@@ -379,9 +387,9 @@ export default function App() {
           <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shadow-lg border border-white/15 shrink-0">
             <img src="/logo-mark.png" alt="SOLE" className="w-5.5 h-5.5 object-contain brightness-0 invert" />
           </div>
-          <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${isSidebarExpanded ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0'}`}>
+          <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${isSidebarExpanded ? 'opacity-100 max-w-[9.375rem]' : 'opacity-0 max-w-0'}`}>
             <h2 className="text-base font-black text-white tracking-wide leading-none">SOLE</h2>
-            <span className="text-[9px] font-bold tracking-widest text-orange-200 uppercase mt-1 block">Operations Engine</span>
+            <span className="text-[0.5625rem] font-bold tracking-widest text-orange-200 uppercase mt-1 block">Operations Engine</span>
           </div>
         </div>
 
@@ -395,12 +403,12 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
                 activeView === 'dashboard'
-                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  ? 'bg-white/15 text-white border-l-[0.25rem] border-orange-400 shadow-md'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
               }`}
             >
               <LayoutDashboard className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[12.5rem]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 Dashboard
               </span>
             </button>
@@ -414,12 +422,12 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all cursor-pointer ${
                 activeView === 'schedule'
-                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  ? 'bg-white/15 text-white border-l-[0.25rem] border-orange-400 shadow-md'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
               }`}
             >
               <Trello className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[12.5rem]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 Schedule Board
               </span>
             </button>
@@ -433,12 +441,12 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
                 activeView === 'bookings'
-                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  ? 'bg-white/15 text-white border-l-[0.25rem] border-orange-400 shadow-md'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
               }`}
             >
               <CalendarDays className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[12.5rem]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 Reservations
               </span>
             </button>
@@ -452,12 +460,12 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
                 activeView === 'reports'
-                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  ? 'bg-white/15 text-white border-l-[0.25rem] border-orange-400 shadow-md'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
               }`}
             >
               <FileSpreadsheet className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[12.5rem]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 Daily Manifests
               </span>
             </button>
@@ -471,12 +479,12 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
                 activeView === 'customers'
-                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  ? 'bg-white/15 text-white border-l-[0.25rem] border-orange-400 shadow-md'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
               }`}
             >
               <Users className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[12.5rem]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 CRM / Customers
               </span>
             </button>
@@ -490,12 +498,12 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all cursor-pointer ${
                 activeView === 'products'
-                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  ? 'bg-white/15 text-white border-l-[0.25rem] border-orange-400 shadow-md'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
               }`}
             >
               <Layers className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[12.5rem]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 Product Catalog
               </span>
             </button>
@@ -509,12 +517,12 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
                 activeView === 'guides'
-                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  ? 'bg-white/15 text-white border-l-[0.25rem] border-orange-400 shadow-md'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
               }`}
             >
               <Sparkles className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[12.5rem]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 Guides & Staff
               </span>
             </button>
@@ -528,12 +536,12 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 text-sm font-bold rounded-xl transition-all ${
                 activeView === 'finance'
-                  ? 'bg-white/15 text-white border-l-[4px] border-orange-400 shadow-md'
+                  ? 'bg-white/15 text-white border-l-[0.25rem] border-orange-400 shadow-md'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
               }`}
             >
               <Coins className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap text-left ${isSidebarExpanded ? 'opacity-100 max-w-[12.5rem]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 Corporate Finance
               </span>
             </button>
@@ -556,7 +564,7 @@ export default function App() {
                 {currentUser.username[0].toUpperCase()}
               </span>
               <span className={`text-xs font-black text-white truncate transition-all duration-300 ${
-                isSidebarExpanded ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0 pointer-events-none'
+                isSidebarExpanded ? 'opacity-100 max-w-[7.5rem]' : 'opacity-0 max-w-0 pointer-events-none'
               }`}>
                 {currentUser.username}
               </span>
@@ -600,9 +608,10 @@ export default function App() {
               <BookingsView
                 bookings={bookings}
                 currentUser={currentUser}
-                onDeleteBooking={handleDeleteBooking}
+                onDeleteBookings={handleDeleteBookings}
                 onUpdateBookingStatus={handleUpdateBookingStatus}
                 onUpdateBookingPaymentStatus={handleUpdateBookingPaymentStatus}
+                onUpdateBookingWorkflow={handleUpdateBookingWorkflow}
                 onSaveBooking={handleSaveBooking}
               />
             )}
@@ -655,7 +664,7 @@ export default function App() {
         <AnimatePresence>
           {showLogoutConfirm && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setShowLogoutConfirm(false)}
             >
               <motion.div 

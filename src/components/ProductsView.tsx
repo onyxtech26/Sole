@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Sparkles, Layers, ShoppingBag, CheckSquare, Search, AlertCircle, Save, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Edit, Sparkles, Layers, ShoppingBag, CheckSquare, Search, AlertCircle, Save, X, ImagePlus, Loader2, ImageOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
 import { writeStore } from '../utils/storage';
+import { uploadMedia } from '../lib/storageUpload';
 
 export interface ProductGrade {
   code: string; // TG1, TG2, TG3
@@ -16,6 +17,7 @@ export interface Product {
   label: string; // Private Colosseum Tour
   defaultCap: number; // 7
   grades: ProductGrade[];
+  image?: string; // public URL in the sole-media bucket
 }
 
 // Storage key + defaults are the single source of truth for the product catalog.
@@ -112,6 +114,11 @@ export default function ProductsView() {
   const [deleteProductConfirmCode, setDeleteProductConfirmCode] = useState<string | null>(null);
   const [deleteGradeConfirmCode, setDeleteGradeConfirmCode] = useState<string | null>(null);
 
+  // Catalog image upload state
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const stored = localStorage.getItem(PRODUCTS_STORAGE_KEY);
     if (stored) {
@@ -163,6 +170,37 @@ export default function ProductsView() {
     setNewProdLabel('');
     setNewProdCap(7);
     setShowAddProductModal(false);
+  };
+
+  // Upload (or replace) the catalog image of the selected product. Any picture
+  // format the browser reports as an image is accepted — the bucket stores the
+  // file as-is and we keep only the returned public URL on the product.
+  const handleImageUpload = async (file: File | null) => {
+    if (!file || !selectedProduct) return;
+    if (!file.type.startsWith('image/')) {
+      setImageError('That file is not a picture. Choose a JPG, PNG, WEBP, GIF, SVG, HEIC…');
+      return;
+    }
+    setImageError(null);
+    setUploadingImage(true);
+    try {
+      const url = await uploadMedia(file, 'products');
+      const updatedProd = { ...selectedProduct, image: url };
+      saveProducts(products.map(p => (p.code === selectedProduct.code ? updatedProd : p)));
+      setSelectedProduct(updatedProd);
+    } catch (e: any) {
+      setImageError(e?.message || 'Upload failed. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    if (!selectedProduct) return;
+    const updatedProd = { ...selectedProduct, image: '' };
+    saveProducts(products.map(p => (p.code === selectedProduct.code ? updatedProd : p)));
+    setSelectedProduct(updatedProd);
   };
 
   const executeDeleteProduct = (code: string) => {
@@ -241,9 +279,13 @@ export default function ProductsView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-[calc(100vh-180px)] lg:h-[calc(100vh-200px)] min-h-[500px] overflow-hidden">
+      {/* The app shell's <main> is the scroll container, so this grid flows at its
+          natural height. Pinning it to the viewport and hiding the overflow (as it
+          used to) sliced the last row of cards off at a hard edge — and because
+          scrollbars are hidden globally there was nothing to show it could scroll. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left Columns: Products catalog ledger */}
-        <div className="lg:col-span-2 flex flex-col h-full space-y-4 overflow-hidden">
+        <div className="lg:col-span-2 flex flex-col space-y-4">
           {/* Search */}
           <div className="flex items-center gap-4">
             <div className="relative flex-grow">
@@ -259,7 +301,7 @@ export default function ProductsView() {
           </div>
 
           {/* Catalog grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 flex-grow overflow-y-auto pr-1 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {filteredProducts.map((p, idx) => (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
@@ -276,9 +318,28 @@ export default function ProductsView() {
                     : 'bg-white border-slate-200 shadow-md hover:shadow-lg'
                 }`}
               >
+                {/* Catalog cover image (or an empty-state placeholder) */}
+                <div className={`relative w-full aspect-[5/2] rounded-xl overflow-hidden mb-4 border ${
+                  selectedProduct?.code === p.code ? 'border-orange-200' : 'border-slate-100'
+                } bg-slate-50`}>
+                  {p.image ? (
+                    <img
+                      src={p.image}
+                      alt={p.label}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-slate-300">
+                      <ImageOff className="w-6 h-6" />
+                      <span className="text-[0.5625rem] font-bold uppercase tracking-wider">No image</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-between items-start pb-3 border-b border-slate-100">
                   <div>
-                    <span className="text-[10px] font-bold text-orange-600 font-mono tracking-wider">{p.code}</span>
+                    <span className="text-[0.625rem] font-bold text-orange-600 font-mono tracking-wider">{p.code}</span>
                     <h3 className="font-extrabold text-sm text-slate-800 leading-tight mt-0.5">{p.label}</h3>
                   </div>
                   <button
@@ -298,14 +359,14 @@ export default function ProductsView() {
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-slate-500 font-semibold">
                   <span>Default Max Capacity:</span>
-                  <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 font-mono">
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[0.625rem] font-bold text-slate-700 font-mono">
                     {p.defaultCap} Pax
                   </span>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
                   {p.grades.map(g => (
-                    <span key={g.code} className="px-2 py-0.5 bg-orange-50 border border-orange-100 text-orange-600 font-bold text-[9px] rounded-lg">
+                    <span key={g.code} className="px-2 py-0.5 bg-orange-50 border border-orange-100 text-orange-600 font-bold text-[0.5625rem] rounded-lg">
                       {g.code}: {g.capacity} pax
                     </span>
                   ))}
@@ -315,28 +376,95 @@ export default function ProductsView() {
           </div>
         </div>
 
-        {/* Right Columns: Selected product's sub-grades editor */}
-        <div className="lg:col-span-1 h-full overflow-y-auto pb-4 pr-1">
+        {/* Right Columns: Selected product's sub-grades editor.
+            Sticky on desktop so it stays in view while the catalog scrolls past,
+            with its own scroll only if the grade list outgrows the viewport. */}
+        <div className="lg:col-span-1 lg:sticky lg:top-2 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           {selectedProduct ? (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1, ease: [0.16, 1, 0.3, 1] }} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-6 shadow-md">
               <div>
-                <span className="text-[10px] font-bold text-orange-600 font-mono uppercase tracking-widest">Catalog Subgrade Config</span>
+                <span className="text-[0.625rem] font-bold text-orange-600 font-mono uppercase tracking-widest">Catalog Subgrade Config</span>
                 <h3 className="text-base font-extrabold text-slate-900 font-sans mt-0.5">{selectedProduct.label} Options</h3>
+              </div>
+
+              {/* ─── Catalog image uploader (accepts any picture format) ─── */}
+              <div className="space-y-3">
+                <span className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Catalog Image</span>
+
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  id="product-image-input"
+                  className="hidden"
+                  onChange={(e) => handleImageUpload(e.target.files?.[0] || null)}
+                />
+
+                {/* Same 5:2 ratio as the catalog card, so the crop previewed here
+                    is exactly the crop the card will show. */}
+                <div className="relative w-full aspect-[5/2] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group">
+                  {selectedProduct.image ? (
+                    <img src={selectedProduct.image} alt={selectedProduct.label} className="w-full h-full object-cover" />
+                  ) : (
+                    <label
+                      htmlFor="product-image-input"
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-2 cursor-pointer text-slate-400 hover:text-orange-600 hover:bg-orange-50/40 transition"
+                    >
+                      <ImagePlus className="w-7 h-7" />
+                      <span className="text-[0.625rem] font-bold uppercase tracking-wider">Click to upload</span>
+                      <span className="text-[0.5625rem] font-semibold text-slate-400">JPG · PNG · WEBP · GIF · SVG · HEIC</span>
+                    </label>
+                  )}
+
+                  {uploadingImage && (
+                    <div className="absolute inset-0 bg-white/75 backdrop-blur-[0.0625rem] flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="w-6 h-6 text-orange-600 animate-spin" />
+                      <span className="text-[0.625rem] font-bold text-slate-600 uppercase tracking-wider">Uploading…</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <label
+                    htmlFor="product-image-input"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer active:scale-95"
+                  >
+                    <ImagePlus className="w-3.5 h-3.5" />
+                    {selectedProduct.image ? 'Replace Image' : 'Upload Image'}
+                  </label>
+                  {selectedProduct.image && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      title="Remove image"
+                      className="px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 transition cursor-pointer active:scale-95"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {imageError && (
+                  <div className="flex items-start gap-1.5 text-[0.625rem] font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-2">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                    <span>{imageError}</span>
+                  </div>
+                )}
               </div>
 
               {/* Sub-grades ledger */}
               <div className="space-y-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Defined Tour Grades</span>
+                <span className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Defined Tour Grades</span>
                 {selectedProduct.grades.map(g => (
                   <div key={g.code} className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-sm">
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.5 bg-orange-50 border border-orange-100 text-orange-600 font-mono font-black text-[9px] rounded">
+                        <span className="px-1.5 py-0.5 bg-orange-50 border border-orange-100 text-orange-600 font-mono font-black text-[0.5625rem] rounded">
                           {g.code}
                         </span>
                         <strong className="text-xs text-slate-800">{g.name}</strong>
                       </div>
-                      <span className="text-[10px] text-slate-500 font-semibold mt-1 block">Capacity Limit: {g.capacity} Pax</span>
+                      <span className="text-[0.625rem] text-slate-500 font-semibold mt-1 block">Capacity Limit: {g.capacity} Pax</span>
                     </div>
 
                     <button
@@ -351,11 +479,11 @@ export default function ProductsView() {
 
               {/* Add Sub-grade Option Form */}
               <form onSubmit={handleAddGrade} className="space-y-4 pt-4 border-t border-slate-100">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Create New Option Grade</span>
+                <span className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Create New Option Grade</span>
                 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase">Option Code</label>
+                    <label className="text-[0.5625rem] font-bold text-slate-500 uppercase">Option Code</label>
                     <input
                       type="text"
                       required
@@ -365,7 +493,7 @@ export default function ProductsView() {
                     />
                   </div>
                   <div className="col-span-2 flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase">Option Name</label>
+                    <label className="text-[0.5625rem] font-bold text-slate-500 uppercase">Option Name</label>
                     <input
                       type="text"
                       required
@@ -378,7 +506,7 @@ export default function ProductsView() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Participant Limit (Capacity)</label>
+                  <label className="text-[0.5625rem] font-bold text-slate-500 uppercase">Participant Limit (Capacity)</label>
                   <input
                     type="number"
                     min={1}
@@ -397,7 +525,7 @@ export default function ProductsView() {
               </form>
             </motion.div>
           ) : (
-            <div className="h-[250px] flex flex-col gap-2 items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl text-center p-6 bg-white/20">
+            <div className="h-[15.625rem] flex flex-col gap-2 items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl text-center p-6 bg-white/20">
               <Layers className="w-8 h-8 text-slate-300 animate-pulse" />
               <p className="text-xs text-slate-400 font-semibold leading-relaxed">
                 Click on any product in the catalog to manage its sub-grade options (TG1, TG2, etc.).
@@ -412,7 +540,7 @@ export default function ProductsView() {
         <AnimatePresence>
           {showAddProductModal && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setShowAddProductModal(false)}
             >
               <motion.div 
@@ -439,7 +567,7 @@ export default function ProductsView() {
 
                 <form onSubmit={handleAddProduct} className="space-y-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Product Code (Unique)</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Product Code (Unique)</label>
                     <input
                       type="text"
                       required
@@ -451,7 +579,7 @@ export default function ProductsView() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Product Label Name</label>
+                    <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Product Label Name</label>
                     <input
                       type="text"
                       required
@@ -464,7 +592,7 @@ export default function ProductsView() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Short Alias</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Short Alias</label>
                       <input
                         type="text"
                         required
@@ -475,7 +603,7 @@ export default function ProductsView() {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Default Max Cap</label>
+                      <label className="text-[0.625rem] font-bold text-slate-500 uppercase tracking-wider">Default Max Cap</label>
                       <input
                         type="number"
                         min={1}
@@ -514,7 +642,7 @@ export default function ProductsView() {
         <AnimatePresence>
           {deleteProductConfirmCode && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteProductConfirmCode(null)}
             >
               <motion.div 
@@ -560,7 +688,7 @@ export default function ProductsView() {
         <AnimatePresence>
           {deleteGradeConfirmCode && (
             <div 
-              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] flex items-center justify-center z-[9999] p-4"
+              className="fixed inset-0 bg-slate-950/30 backdrop-blur-[0.125rem] flex items-center justify-center z-[9999] p-4"
               onClick={() => setDeleteGradeConfirmCode(null)}
             >
               <motion.div 
