@@ -31,7 +31,30 @@
 
   --ease: cubic-bezier(0.16, 1, 0.3, 1);  /* the handoff's signature easing  */
   --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── UI scale ───────────────────────────────────────────────────────────
+     The handoff's type scale was drawn tight, and at 100% browser zoom the
+     11–13px body sizes read too small on a real operator's monitor. Rather
+     than re-typing several hundred inline pixel values — which would scale the
+     text but not the padding, row heights or column widths, and leave every
+     screen cramped — the whole interface is rendered at this factor. It is the
+     same thing the browser's own zoom does, so every proportion the design
+     specifies is preserved exactly.
+
+     `zoom` (not `transform: scale`) because it is a layout-time scale: text is
+     re-rasterised at the larger size and stays crisp, and the page still
+     reflows normally.
+
+     To change the density, change this one number. Two things must move with
+     it, and cannot read the variable themselves:
+       · viewport-height boxes, which use `calc(100dvh / var(--ui-scale))`
+       · the media-query breakpoints below, which are pre-multiplied by it,
+         because media queries evaluate against the *unzoomed* viewport
+         (see the note above the first @media block).                        */
+  --ui-scale: 1.1;
 }
+
+html { zoom: var(--ui-scale); }
 
 html, body {
   margin: 0;
@@ -82,66 +105,98 @@ input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 input[type='number'] { -moz-appearance: textfield; }
 
-/* ── responsive overrides — cannot be expressed inline ──────────────────── */
-@media (max-width: 1100px) {
+/* ── responsive overrides — cannot be expressed inline ────────────────────
+   Breakpoints, each with one job. The first number is the design width; the
+   number actually written in the query is that width × --ui-scale.
+
+     1600 → 1760  wide desktop: gutters widen, the content column does not sprawl
+     1100 → 1210  laptop/tablet: multi-column splits fold, 4-up rows become 2-up
+      820 →  902  the shell itself turns: sidebar to drawer, tables to cards
+      700 →  770  dense rows wrap, field rows stack
+      560 →  616  phone: padding tightens, controls go full width
+
+   Why pre-multiplied: `zoom` on <html> scales rendered pixels but leaves the
+   media-query viewport at its true size. A 1280px window therefore gives the
+   layout only 1280 / 1.1 ≈ 1164px of room while a query still reads 1280 — so
+   an unscaled breakpoint would fire about 10% too late and a laptop would sit
+   on the desktop layout with tablet-width space. Measured, not assumed: see
+   the probe in this change's verification.
+
+   Media queries cannot read custom properties, so these are literals. Change
+   --ui-scale and these move with it.
+
+   Anything below the 820 breakpoint assumes touch: no hover affordance is
+   load-bearing there.                                                       */
+
+/* Nothing is fluid past the content cap, so give the widest desktops a little
+   more breathing room in the gutter rather than a wider line length. */
+@media (min-width: 1760px) {
+  [data-r='pad'] { padding: 24px 32px !important; }
+}
+
+@media (max-width: 1210px) {
   [data-r='g4'] { grid-template-columns: repeat(2, 1fr) !important; }
   [data-r='g3'] { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; }
   [data-r='split'] { grid-template-columns: minmax(0, 1fr) !important; }
 }
-@media (max-width: 820px) {
+@media (max-width: 902px) {
   /* 100dvh, not 100vh: mobile browser chrome otherwise steals the last rows. */
-  [data-r='shell'] { flex-direction: column !important; height: 100dvh !important; }
+  [data-r='shell'] {
+    flex-direction: column !important;
+    height: calc(100dvh / var(--ui-scale)) !important;
+  }
 
-  /* Hover-to-expand is a pointer affordance and touch has no hover. The rail
-     becomes a scrollable horizontal bar with every label permanently shown. */
-  [data-r='side'] {
-    width: 100% !important; height: auto !important; flex-shrink: 0 !important;
+  /* Navigation is a different component at this width, not a restyled rail:
+     ten destinations in a horizontally scrolling strip showed one of them and
+     hid the rest behind an invisible gesture. Sidebar.tsx renders a compact bar
+     plus a drawer instead, so all that is left to do here is clear the notch on
+     a landscape phone. */
+  [data-r='mobilebar'] {
+    padding-left: max(10px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(10px, env(safe-area-inset-right, 0px)) !important;
   }
-  [data-r='sidepanel'] {
-    position: static !important; width: 100% !important;
-    flex-direction: row !important; align-items: stretch !important;
-    box-shadow: none !important; overflow: visible !important;
-  }
-  .side-label { opacity: 1 !important; pointer-events: auto !important; }
-  [data-r='sidenav'] {
-    flex-direction: row !important; align-items: center !important;
-    padding: 8px !important; gap: 4px !important;
-    overflow-x: auto !important; overflow-y: hidden !important;
-    scrollbar-width: none;
-  }
-  [data-r='sidenav']::-webkit-scrollbar { display: none; }
-  .nav-item { width: auto !important; flex-shrink: 0 !important; padding: 8px 12px !important; }
-  [data-r='navgroup'] { display: none !important; }
-  [data-r='brand'] {
-    border-bottom: 0 !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
-    padding: 0 12px !important;
-  }
-  /* Sign-out has to stay reachable on a phone — this was display:none before,
-     which stranded mobile users in the app with no way out. */
-  [data-r='sidefoot'] {
-    display: flex !important; align-items: center !important; flex-shrink: 0 !important;
-    border-top: 0 !important;
-    border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
-    padding: 8px !important;
-  }
-  [data-r='sidefoot'] p { display: none !important; }
 
-  [data-r='g3'], [data-r='g4'], [data-r='g2'] { grid-template-columns: 1fr !important; }
+  /* Two up, not one. A 768px tablet has room for a pair of stat cards, and
+     stacking them into a single 740px-wide column just makes scrolling longer
+     without making anything easier to read. One column arrives at 560. */
+  [data-r='g3'], [data-r='g4'], [data-r='g2'] { grid-template-columns: repeat(2, 1fr) !important; }
   /* The bookings table drops its 1180px floor and hides its column header —
      BookingsView swaps each row for a stacked card at this width. */
   [data-r='tablewrap'] { min-width: 0 !important; }
   [data-r='thead'] { display: none !important; }
   [data-r='drawer'] { width: 100% !important; }
+  /* On a phone the drawer is the whole screen, so its action bar sits over the
+     home indicator unless it clears the safe area. */
+  [data-r='drawerfoot'] {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  }
   [data-r='scroll'] { overflow-x: auto !important; }
   [data-r='pad'] { padding: 12px !important; }
   [data-r='doc'] { padding: 18px 16px !important; }
 
   /* Search is the fastest route to a booking; it used to be hidden outright.
      Give it a full-width row of its own rather than deleting the feature. */
-  [data-r='topbar'] { flex-wrap: wrap !important; padding: 10px 12px !important; }
+  [data-r='topbar'] { flex-wrap: wrap !important; gap: 8px !important; padding: 10px 12px !important; }
   [data-r='search'] { order: 10 !important; width: 100% !important; }
   [data-r='search'] input { width: 100% !important; }
+
+  /* One line: title, then refresh and the bell hard against the right edge.
+     The flex spacer is what used to strand the bell on a line of its own. */
+  [data-r='topbar'] > [data-spacer] { display: none !important; }
+  [data-r='topbar'] [data-r='title'] { flex: 1 1 auto !important; min-width: 0 !important; }
+  /* The subtitle restates what the screen already says; on a phone that costs
+     the title its width. */
+  [data-r='topbar'] [data-r='sub'] { display: none !important; }
+
+  /* A screen toolbar is a row of controls on a laptop and a two-line block on
+     a tablet. The flex spacer stays: it keeps the first line's actions right
+     aligned, and wrapped items simply start at the left of the next line. */
+  [data-r='toolbar'] { flex-wrap: wrap !important; row-gap: 8px !important; }
+
+  /* Segmented period/tab controls scroll rather than wrapping mid-control,
+     which would split one control across two lines. */
+  [data-r='seg'] { max-width: 100% !important; overflow-x: auto !important; scrollbar-width: none; }
+  [data-r='seg']::-webkit-scrollbar { display: none; }
 }
 
 /* ── narrow: dense rows, field grids and section headers ────────────────────
@@ -150,10 +205,13 @@ input[type='number'] { -moz-appearance: textfield; }
    three hooks reflow them: `listrow` wraps a dense row, `fields` stacks a row
    of form controls, `sechead` lets a section header's buttons drop to a second
    line. `data-grow` marks the one child that should claim a full line.        */
-@media (max-width: 700px) {
+@media (max-width: 770px) {
   [data-r='listrow'] {
     flex-wrap: wrap !important;
     row-gap: 6px !important;
+    /* Once a row occupies two lines, centring it vertically makes the short
+       cells float in the middle of the tall ones. Top-align instead. */
+    align-items: flex-start !important;
   }
   [data-r='listrow'] [data-grow] {
     flex: 1 1 100% !important;
@@ -183,16 +241,55 @@ input[type='number'] { -moz-appearance: textfield; }
 }
 
 /* ── phones ─────────────────────────────────────────────────────────────── */
-@media (max-width: 560px) {
-  [data-r='pad'] { padding: 10px !important; }
+@media (max-width: 616px) {
+  /* The scroll area clears the home indicator, so the last card is never half
+     under it. */
+  [data-r='pad'] {
+    padding: 10px !important;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+  }
   [data-r='doc'] { padding: 14px 12px !important; }
-  /* Comfortable thumb targets, without touching desktop density. */
-  .nav-item { min-height: 38px; }
+  /* Below this a two-up card is narrower than its own contents. */
+  [data-r='g3'], [data-r='g4'], [data-r='g2'] { grid-template-columns: 1fr !important; }
+
+  /* Vertical rhythm tightens with the gutters. At 14px the stacked sections
+     read as loose on a 390px screen and cost a screenful of scroll. */
+  [data-r='stack'] { gap: 10px !important; }
+  /* (`.nav-item` sizing used to live here. The rail it belonged to is never
+     rendered below 820 any more — the drawer sets its own 44px targets.) */
   /* A toast pinned to one corner is easy to miss on a small screen. */
   [data-r='toasts'] {
     left: 10px !important; right: 10px !important; bottom: 10px !important;
   }
   [data-r='toasts'] > div { max-width: none !important; }
+
+  /* A dialog on a phone is a sheet: it uses the width it has, and its own body
+     scrolls rather than the page behind it. */
+  [data-r='modalwrap'] { padding: 10px !important; align-items: flex-start !important; }
+  [data-r='modal'] { max-height: calc((100dvh - 20px) / var(--ui-scale)) !important; }
+
+  /* Footer actions stack and fill, so neither is a 90px target beside a
+     thumb-width Cancel. The primary action stays last / bottom. */
+  [data-r='modalfoot'] { flex-direction: column-reverse !important; align-items: stretch !important; }
+  [data-r='modalfoot'] > * { width: 100% !important; justify-content: center !important; }
+
+  /* Toolbar actions become a full-width row of equal buttons rather than a
+     ragged wrap of six different widths. */
+  [data-r='toolbar'] { gap: 6px !important; }
+  [data-r='toolbar'] [data-r='seg'] { width: 100% !important; }
+  [data-r='toolbar'] [data-r='seg'] > * { flex: 1 0 auto !important; }
+
+  /* A 240px search box beside a 120px gap reads as broken. Search takes the
+     line it needs; the fixed width was only ever a desktop measure. */
+  [data-r='toolbar'] [data-grow] { flex: 1 1 100% !important; min-width: 0 !important; }
+  [data-r='toolbar'] [data-grow] input { width: 100% !important; }
+}
+
+/* ── coarse pointers ──────────────────────────────────────────────────────
+   Row actions are revealed on hover, which never fires on touch — so on a
+   touch device they are simply always visible.                             */
+@media (hover: none) {
+  .row .row-actions { opacity: 1 !important; }
 }
 
 /* ── motion ─────────────────────────────────────────────────────────────────
@@ -203,6 +300,7 @@ input[type='number'] { -moz-appearance: textfield; }
 @keyframes dcUpSm   { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
 @keyframes dcPop    { from { opacity: 0; transform: translateY(10px) scale(.985) } to { opacity: 1; transform: none } }
 @keyframes dcRight  { from { opacity: 0; transform: translateX(22px) } to { opacity: 1; transform: none } }
+@keyframes dcLeft   { from { transform: translateX(-100%) } to { transform: none } }
 @keyframes dcDown   { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
 @keyframes dcSpin   { to { transform: rotate(360deg) } }
 @keyframes dcShake  { 10%,90% { transform: translateX(-1px) } 20%,80% { transform: translateX(2px) } 30%,50%,70% { transform: translateX(-3px) } 40%,60% { transform: translateX(3px) } }
@@ -217,6 +315,11 @@ input[type='number'] { -moz-appearance: textfield; }
 .up-sm   { animation: dcUpSm .26s var(--ease) both }
 .pop     { animation: dcPop .24s var(--ease) both }
 .slide-r { animation: dcRight .3s var(--ease) both }
+/* No fill mode, unlike the other entrances. This one carries the only
+   navigation a phone has, so its resting state should be "where it belongs"
+   for as much of its life as possible — a backwards fill would additionally
+   park it off-screen before the animation's first frame. */
+.slide-l { animation: dcLeft .26s var(--ease) }
 .drop    { animation: dcDown .18s var(--ease) both }
 .spin    { animation: dcSpin .7s linear infinite }
 .shake   { animation: dcShake .42s both }

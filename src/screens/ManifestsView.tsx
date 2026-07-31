@@ -6,7 +6,7 @@ import { download, manifestCsv, manifestPdf, manifestText, copyText } from '../u
 import { RollingNumber } from '../ui/RollingNumber';
 import type { ViewProps } from './types';
 
-export function ManifestsView({ store, user }: ViewProps) {
+export function ManifestsView({ store, user, onGo }: ViewProps) {
   const toast = useToast();
   const [date, setDate] = useState(today());
   const [busy, setBusy] = useState(false);
@@ -21,6 +21,30 @@ export function ManifestsView({ store, user }: ViewProps) {
 
   const dayBookings = store.bookings.filter(b => b.date === date && b.status !== 'Cancelled');
   const totalPax = bands.reduce((n, g) => n + g.pax, 0);
+
+  /* Passengers on this date who never made it into a band — a band needs both
+     a tour time and a guide, so either missing leaves them off the runsheet. */
+  const ungroupedPax = useMemo(
+    () => dayBookings
+      .filter(b => !b.guide || !b.tourTime)
+      .reduce((n, b) => n + b.travelers.length, 0),
+    [dayBookings],
+  );
+
+  const guidesOnDuty = useMemo(() => {
+    const names = [...new Set(bands.map(g => g.guide).filter(Boolean))];
+    return names.length ? names.join(', ') : '—';
+  }, [bands]);
+
+  /* Stamped when the sheet is rendered, which is what "generated" means on a
+     printed copy. Recomputed when the day or its data changes, not per render. */
+  const printedOn = useMemo(
+    () => new Date().toLocaleString('en-GB', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    }),
+    [date, bands],
+  );
 
   const savePdf = async () => {
     setBusy(true);
@@ -37,7 +61,7 @@ export function ManifestsView({ store, user }: ViewProps) {
 
   return (
     <>
-      <div data-print="hide" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div data-print="hide" data-r="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <Btn icon="chevronLeft" onClick={() => setDate(d => addDays(d, -1))} style={{ padding: '5px 9px' }}>
           Previous
         </Btn>
@@ -63,6 +87,22 @@ export function ManifestsView({ store, user }: ViewProps) {
             </>
           )}
         </span>
+
+        {ungroupedPax > 0 && !guideFilter && (
+          <Hov
+            as="button"
+            type="button"
+            onClick={() => onGo('groups')}
+            style={{
+              fontSize: 11.5, fontWeight: 600, color: C.bad, background: C.badBg,
+              border: `1px solid ${C.badLine}`, borderRadius: 5, padding: '4px 9px',
+              cursor: 'pointer',
+            }}
+            hover={{ borderColor: '#e0a3b3' }}
+          >
+            {ungroupedPax} pax not yet grouped
+          </Hov>
+        )}
 
         <div style={{ flex: 1 }} />
 
@@ -93,27 +133,38 @@ export function ManifestsView({ store, user }: ViewProps) {
       </div>
 
       <section data-r="doc" style={{
-        background: C.panel, border: `1px solid ${C.line}`, borderRadius: 8, padding: 24,
+        background: C.panel, border: `1px solid ${C.line}`, borderRadius: 8, padding: '30px 32px',
       }}>
         <div style={{
-          display: 'flex', alignItems: 'flex-end', gap: 12,
-          borderBottom: `2px solid ${C.ink}`, paddingBottom: 12, marginBottom: 18,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16,
+          borderBottom: `1.5px solid ${C.ink}`, paddingBottom: 15, flexWrap: 'wrap',
         }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src="/logo-mark.png" alt="" style={{ height: 18, width: 'auto' }} />
-              <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '.16em' }}>SOLE</span>
-            </div>
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: C.muted }}>
-              Sun Tours Travels · daily manifest
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <img
+              src="/logo.png"
+              alt="SOLE"
+              style={{ height: 18, width: 'auto', display: 'block', alignSelf: 'flex-start' }}
+            />
+            <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-.01em' }}>
+              Sun Tours Travels — Daily Manifest
+            </span>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{longDate(date)}</p>
-            <p style={{ margin: '3px 0 0', fontSize: 11, color: C.muted }}>
-              {bands.length} groups · {totalPax} passengers
-            </p>
+          <div style={{
+            textAlign: 'right', fontSize: 11.5, color: C.body,
+            display: 'flex', flexDirection: 'column', gap: 2,
+          }}>
+            <span><strong style={{ color: C.ink }}>Manifest date</strong> · {longDate(date)}</span>
+            <span><strong style={{ color: C.ink }}>Generated</strong> · {printedOn}</span>
           </div>
+        </div>
+
+        <div data-r="g4" style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, margin: '18px 0 20px',
+        }}>
+          <Stat label="Tours" value={String(bands.length)} />
+          <Stat label="Passengers" value={String(totalPax)} />
+          <Stat label="Not grouped" value={String(ungroupedPax)} />
+          <Stat label="Guides on duty" value={guidesOnDuty} small />
         </div>
 
         {!bands.length && (
@@ -125,45 +176,50 @@ export function ManifestsView({ store, user }: ViewProps) {
         )}
 
         {bands.map(g => (
-          <div key={`${g.no}-${g.time}-${g.guide}`} className="up" style={{ marginBottom: 22 }}>
+          <div key={`${g.no}-${g.time}-${g.guide}`} className="up" style={{ marginBottom: 20 }}>
             <div style={{
-              display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap',
-              background: C.paper, borderRadius: 6, padding: '8px 11px', marginBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+              background: C.ink, color: '#fff', padding: '7px 12px', borderRadius: '5px 5px 0 0',
             }}>
               <span style={{
-                fontSize: 10, fontWeight: 700, background: C.ink, color: '#fff',
-                borderRadius: 4, padding: '2px 7px',
+                fontFamily: MONO, fontSize: 11, fontWeight: 600,
+                background: 'rgba(253,151,7,.2)', color: '#fdb44e',
+                borderRadius: 4, padding: '1px 6px',
               }}>
                 GRP {g.no}
               </span>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>{g.tour}</span>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>
+              <span style={{ fontSize: 12.5, fontWeight: 600 }}>{g.tour}</span>
+              <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.7)' }}>
                 {g.tg} · {g.tgTitle}
               </span>
               <div style={{ flex: 1 }} />
-              <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600 }}>{g.time}</span>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>{g.guide}</span>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>{g.guidePhone}</span>
+              <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600 }}>{g.time}</span>
+              <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.7)' }}>·</span>
+              <span style={{ fontSize: 11.5, fontWeight: 600 }}>{g.guide}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#fdb44e' }}>{g.guidePhone}</span>
               <span style={{
-                fontSize: 11, fontWeight: 600, borderRadius: 11, padding: '1px 8px',
-                background: g.pax >= g.cap ? C.badBg : C.goodBg,
-                color: g.pax >= g.cap ? C.bad : C.good,
+                fontSize: 11, color: 'rgba(255,255,255,.7)',
+                background: 'rgba(255,255,255,.1)', borderRadius: 4, padding: '1px 6px',
               }}>
                 {g.fill}
               </span>
             </div>
 
-            <div data-r="scroll" style={{ overflowX: 'auto' }}>
+            <div data-r="scroll" style={{
+              overflowX: 'auto', border: `1px solid ${C.line}`, borderTop: 0,
+              borderRadius: '0 0 5px 5px',
+            }}>
               <table style={{
-                width: '100%', borderCollapse: 'collapse', fontSize: 11.5, minWidth: 560,
+                width: '100%', borderCollapse: 'collapse', fontSize: 11.5, minWidth: 660,
               }}>
                 <thead>
-                  <tr style={{ background: C.wash }}>
-                    {['#', 'Name', 'Age', 'Role', 'Reference', 'Phone', 'Lang'].map(h => (
+                  <tr style={{ background: C.paper }}>
+                    {['No', 'Reference', 'Name', 'Age', 'Role', 'Phone', 'Lang'].map(h => (
                       <th key={h} style={{
-                        textAlign: h === '#' ? 'center' : 'left', padding: '6px 9px',
-                        borderBottom: `1px solid ${C.line}`, fontSize: 9.5, fontWeight: 600,
+                        textAlign: 'left', padding: '6px 12px',
+                        borderBottom: `1px solid ${C.line}`, fontSize: 9, fontWeight: 600,
                         letterSpacing: '.07em', textTransform: 'uppercase', color: C.muted2,
+                        whiteSpace: 'nowrap',
                       }}>
                         {h}
                       </th>
@@ -178,21 +234,15 @@ export function ManifestsView({ store, user }: ViewProps) {
                       style={{ borderBottom: `1px solid ${C.lineFaint}` }}
                       hover={{ background: C.wash }}
                     >
-                      <td style={{ ...cell, textAlign: 'center', fontFamily: MONO, color: C.faint }}>{r.no}</td>
+                      <td style={{ ...cell, fontFamily: MONO, fontSize: 10.5, color: C.faint }}>{r.no}</td>
+                      <td style={{ ...cell, fontFamily: MONO, fontSize: 10.5, color: C.body }}>{r.ref}</td>
                       <td style={{ ...cell, fontWeight: 500 }}>{r.name}</td>
-                      <td style={cell}>{r.age}</td>
-                      <td style={cell}>
-                        <span style={{
-                          fontSize: 10, fontWeight: 600, borderRadius: 4, padding: '1px 6px',
-                          background: r.role === 'Lead' ? C.infoBg : C.paper,
-                          color: r.role === 'Lead' ? C.info : C.muted2,
-                        }}>
-                          {r.role}
-                        </span>
+                      <td style={{ ...cell, color: C.muted2 }}>{r.age}</td>
+                      <td style={{ ...cell, color: C.muted2 }}>{r.role}</td>
+                      <td style={{ ...cell, fontFamily: MONO, fontSize: 10.5, color: C.body }}>
+                        {r.phone || '—'}
                       </td>
-                      <td style={{ ...cell, fontFamily: MONO, fontSize: 10.5, color: C.muted }}>{r.ref}</td>
-                      <td style={{ ...cell, fontFamily: MONO, fontSize: 10.5 }}>{r.phone || '—'}</td>
-                      <td style={{ ...cell, fontWeight: 600, color: C.muted2 }}>{r.lang}</td>
+                      <td style={{ ...cell, fontSize: 10, fontWeight: 600, color: C.muted2 }}>{r.lang}</td>
                     </Hov>
                   ))}
                 </tbody>
@@ -201,18 +251,40 @@ export function ManifestsView({ store, user }: ViewProps) {
           </div>
         ))}
 
-        {bands.length > 0 && (
-          <p style={{
-            margin: '18px 0 0', paddingTop: 12, borderTop: `1px solid ${C.line}`,
-            fontSize: 10.5, color: C.muted,
-          }}>
-            Every passenger must carry a valid ID document. Emergency contact · Masoud +39 351 118 2663.
-          </p>
-        )}
+        <p style={{
+          margin: 0, paddingTop: 14, borderTop: `1px solid ${C.lineSoft}`,
+          fontSize: 10, color: C.faint2,
+        }}>
+          Sun Tours Travels · internal operational manifest · +39 331 174 6737 ·
+          info@suntourstravels.com
+        </p>
       </section>
     </>
   );
 }
 
-const cell: React.CSSProperties = { padding: '6px 9px', verticalAlign: 'middle' };
+const cell: React.CSSProperties = { padding: '6px 12px', verticalAlign: 'middle' };
+
+/** One of the four figures the manifest opens with. */
+function Stat({ label, value, small }: { label: string; value: string; small?: boolean }) {
+  return (
+    <div style={{
+      border: `1px solid ${C.lineSoft}`, background: C.wash, borderRadius: 7, padding: '11px 13px',
+    }}>
+      <p style={{
+        margin: '0 0 4px', fontSize: 9, fontWeight: 600, letterSpacing: '.09em',
+        textTransform: 'uppercase', color: C.muted2,
+      }}>
+        {label}
+      </p>
+      <p style={{
+        margin: 0, fontWeight: 600, lineHeight: small ? 1.35 : 1,
+        fontSize: small ? 12.5 : 19,
+        fontVariantNumeric: 'tabular-nums', textWrap: 'pretty',
+      }}>
+        {value}
+      </p>
+    </div>
+  );
+}
 

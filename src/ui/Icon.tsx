@@ -1,10 +1,14 @@
 /* The 33 icon shapes used by the design handoff, lifted verbatim from
    design/SOLE.dc.html so the port draws exactly the same glyphs. Each entry is
-   the inner markup of a 24×24 lucide-style outline icon. */
+   the inner markup of a 24×24 lucide-style outline icon.
+
+   `menu` is the one addition: the handoff had no mobile navigation, so it never
+   needed a hamburger. It is drawn to the same lucide spec as the rest. */
 
 import type { CSSProperties } from 'react';
 
 const SHAPES = {
+  menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
   trash:
     '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',

@@ -125,11 +125,11 @@ export function DateRangeBar({ value, onChange, summary, children }: Props) {
   }, []);
 
   return (
-    <div style={{
+    <div data-r="toolbar" style={{
       display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
       position: 'relative', zIndex: 20,
     }}>
-      <div style={{
+      <div data-r="seg" style={{
         display: 'flex', border: `1px solid ${C.line}`, background: C.panel,
         borderRadius: 6, overflow: 'hidden',
       }}>
@@ -186,7 +186,8 @@ export function DateRangeBar({ value, onChange, summary, children }: Props) {
           <div
             className="drop"
             style={{
-              position: 'absolute', top: 36, left: 35, width: 262, background: C.panel,
+              position: 'absolute', top: 36, left: 35, width: 262,
+              maxWidth: 'calc(100vw - 30px)', background: C.panel,
               border: `1px solid ${C.line}`, borderRadius: 8,
               boxShadow: '0 16px 40px rgba(11,18,32,.14)', padding: 11, zIndex: 60,
             }}

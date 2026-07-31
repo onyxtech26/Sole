@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '../ui/Icon';
 import {
-  Btn, C, Hov, Input, MONO, Modal, ModalFoot, ModalHead, Select,
+  Btn, C, Hov, IconBtn, Input, MONO, Modal, ModalFoot, ModalHead, Select,
   STATUS_COLORS, Section, useToast,
 } from '../ui/kit';
 import { commit } from '../lib/store';
-import { delayOf, eur, short, today } from '../utils/dates';
+import {
+  addDays, addMonths, delayOf, eur, inRange, rangeFor, rangeLabelFor, short, today,
+  type RangeMode,
+} from '../utils/dates';
 import {
   paxOf, productName, syncBookingsToGroups, tgTitleOf,
 } from '../utils/selectors';
 import { isPlaceholderName } from '../utils/viator';
 import { canSeeMoney } from '../utils/access';
-import { useMediaQuery } from '../ui/useMediaQuery';
+import { MOBILE_QUERY, useMediaQuery } from '../ui/useMediaQuery';
 import { RollingNumber } from '../ui/RollingNumber';
 import { writeWorkbook } from '../utils/exports';
 import type { Booking } from '../types';
@@ -38,6 +41,18 @@ type SortCol =
   | 'ref' | 'date' | 'resTime' | 'tourTime' | 'tour' | 'lead' | 'pax'
   | 'guide' | 'status' | 'gross';
 
+/* Time-slot filter. 'all' is the default so the saved views keep behaving the
+   way they always have until someone deliberately narrows to a period. */
+type Period = RangeMode | 'all';
+
+const PERIODS: { id: Period; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'today', label: 'Daily' },
+  { id: 'week', label: 'Weekly' },
+  { id: 'month', label: 'Monthly' },
+  { id: 'year', label: 'Yearly' },
+];
+
 const PAGE_SIZE = 40;
 
 interface Props extends ViewProps {
@@ -51,9 +66,11 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
   // Revenue stays masked for anyone who cannot see finance, so the column keeps
   // its width and the table does not reflow between roles.
   const showMoney = canSeeMoney(user.role);
-  const compact = useMediaQuery('(max-width: 820px)');
+  const compact = useMediaQuery(MOBILE_QUERY);
 
   const [view, setView] = useState<ViewId>('upcoming');
+  const [period, setPeriod] = useState<Period>('all');
+  const [anchor, setAnchor] = useState(t);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [fTour, setFTour] = useState('all');
@@ -66,11 +83,28 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
   const [selected, setSelected] = useState<string[]>([]);
   const [timeAsk, setTimeAsk] = useState<string | null>(null);
 
-  useEffect(() => { setPage(0); }, [view, query, fTour, fStatus, fGuide, fLang]);
+  useEffect(() => { setPage(0); }, [view, query, fTour, fStatus, fGuide, fLang, period, anchor]);
+
+  const periodRange = useMemo(
+    () => (period === 'all' ? null : rangeFor(period, anchor, anchor)),
+    [period, anchor],
+  );
+
+  /* Step the window by its own unit, so "next" on Weekly means next week. */
+  const stepPeriod = (dir: 1 | -1) => {
+    if (period === 'today') setAnchor(a => addDays(a, dir));
+    else if (period === 'week') setAnchor(a => addDays(a, 7 * dir));
+    else if (period === 'month') setAnchor(a => addMonths(a, dir));
+    else if (period === 'year') setAnchor(a => addMonths(a, 12 * dir));
+  };
 
   /* ── selection helpers ── */
   const countView = (v: ViewId): number => {
-    const l = store.bookings;
+    // Counts respect the time slot too, otherwise a chip promises rows the
+    // narrowed table cannot show.
+    const l = periodRange
+      ? store.bookings.filter(x => inRange(x.date, periodRange))
+      : store.bookings;
     if (v === 'all') return l.length;
     if (v === 'today') return l.filter(x => x.date === t).length;
     if (v === 'upcoming') return l.filter(x => x.date >= t).length;
@@ -80,6 +114,7 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
 
   const filtered = useMemo(() => {
     let l = [...store.bookings];
+    if (periodRange) l = l.filter(x => inRange(x.date, periodRange));
     if (view === 'today') l = l.filter(x => x.date === t);
     else if (view === 'upcoming') l = l.filter(x => x.date >= t);
     else if (view === 'ungrouped') l = l.filter(x => !x.guide || !x.tourTime);
@@ -121,7 +156,8 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
       if (typeof ka === 'number' && typeof kb === 'number') return (ka - kb) * dir;
       return String(ka).localeCompare(String(kb)) * dir;
     });
-  }, [store.bookings, store.products, view, fTour, fStatus, fGuide, fLang, query, sortCol, sortDir, t]);
+  }, [store.bookings, store.products, view, fTour, fStatus, fGuide, fLang, query,
+    sortCol, sortDir, t, periodRange]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
@@ -210,7 +246,7 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
   return (
     <>
       {/* ── view tabs + actions ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <div data-r="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         {VIEWS.map(v => {
           const on = view === v.id;
           return (
@@ -241,6 +277,46 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
         })}
 
         <div style={{ flex: 1 }} />
+
+        {/* ── time slot ── */}
+        <div data-r="seg" style={{
+          display: 'flex', border: `1px solid ${C.line}`, background: C.panel,
+          borderRadius: 6, overflow: 'hidden',
+        }}>
+          {PERIODS.map(p => {
+            const on = period === p.id;
+            return (
+              <Hov
+                key={p.id}
+                as="button"
+                type="button"
+                onClick={() => { setPeriod(p.id); setAnchor(t); }}
+                aria-pressed={on}
+                style={{
+                  border: 0, borderRight: `1px solid ${C.lineSoft}`, padding: '5px 10px',
+                  fontSize: 11.5, fontWeight: on ? 600 : 500, cursor: 'pointer',
+                  background: on ? C.ink : C.panel, color: on ? '#fff' : C.body,
+                }}
+                hover={on ? undefined : { background: C.paper }}
+              >
+                {p.label}
+              </Hov>
+            );
+          })}
+        </div>
+
+        {periodRange && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <IconBtn icon="chevronLeft" title="Previous period" onClick={() => stepPeriod(-1)} />
+            <span style={{
+              minWidth: 118, textAlign: 'center', fontSize: 11.5,
+              fontWeight: 500, color: C.body,
+            }}>
+              {rangeLabelFor(period as RangeMode, anchor, anchor)}
+            </span>
+            <IconBtn icon="chevronRight" title="Next period" onClick={() => stepPeriod(1)} />
+          </div>
+        )}
 
         <Hov
           as="button"

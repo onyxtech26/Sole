@@ -80,6 +80,7 @@ export interface Product {
   label: string;   // full public title
   defaultCap: number;
   options: ProductOption[];
+  image: string;   // public URL in the media bucket ('' = none)
 }
 
 export interface Guide {

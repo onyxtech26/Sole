@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Icon } from '../ui/Icon';
 import {
   Btn, C, Empty, Hov, Input, MONO, Modal, ModalFoot, ModalHead, Section, Select, useToast,
 } from '../ui/kit';
 import { commit } from '../lib/store';
+import { uploadFile } from '../lib/upload';
 import { today } from '../utils/dates';
 import { RollingNumber } from '../ui/RollingNumber';
 import type { Guide, StaffMember } from '../types';
@@ -32,7 +33,26 @@ export function TeamView({ store, setConfirm }: ViewProps) {
   const [guideDraft, setGuideDraft] = useState<Guide | null>(null);
   const [staffDraft, setStaffDraft] = useState<StaffMember | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const photoInput = useRef<HTMLInputElement>(null);
   const t = today();
+
+  /* Both editors share one file input: only one modal is ever open. */
+  const pickPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadFile('team', file);
+      setGuideDraft(d => (d ? { ...d, image: url } : d));
+      setStaffDraft(d => (d ? { ...d, image: url } : d));
+      toast('Photo attached — save to keep it');
+    } catch (err) {
+      toast((err as Error).message || 'Upload failed', 'bad');
+    } finally {
+      setUploading(false);
+      if (photoInput.current) photoInput.current.value = '';
+    }
+  };
 
   /* Upcoming workload per guide — the number that actually matters when dispatching. */
   const load = useMemo(() => {
@@ -99,8 +119,8 @@ export function TeamView({ store, setConfirm }: ViewProps) {
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <div style={{
+      <div data-r="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div data-r="seg" style={{
           display: 'flex', border: `1px solid ${C.line}`, background: C.panel,
           borderRadius: 6, overflow: 'hidden',
         }}>
@@ -126,7 +146,7 @@ export function TeamView({ store, setConfirm }: ViewProps) {
             })}
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <div data-grow style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <Icon name="search" size={13} color={C.muted3} style={{ position: 'absolute', left: 9 }} />
           <Input
             value={query}
@@ -174,13 +194,7 @@ export function TeamView({ store, setConfirm }: ViewProps) {
               return (
                 <Section key={g.id} className="up lift-shadow" style={{ padding: 15 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
-                    <span style={{
-                      width: 38, height: 38, flexShrink: 0, borderRadius: 9, background: C.ink,
-                      color: C.accent, display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', fontSize: 14, fontWeight: 700,
-                    }}>
-                      {g.name.charAt(0).toUpperCase() || '?'}
-                    </span>
+                    <Avatar src={g.image} name={g.name} size={38} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 600 }}>{g.name}</h3>
                       <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.faint }}>
@@ -286,13 +300,7 @@ export function TeamView({ store, setConfirm }: ViewProps) {
                 }}
                 hover={{ background: C.wash }}
               >
-                <span style={{
-                  width: 30, height: 30, flexShrink: 0, borderRadius: 7, background: C.paper,
-                  border: `1px solid ${C.line}`, color: C.body, display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700,
-                }}>
-                  {s.name.charAt(0).toUpperCase() || '?'}
-                </span>
+                <Avatar src={s.image} name={s.name} size={30} tone="light" />
                 <div style={{ width: 170, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: 12.5, fontWeight: 600 }}>{s.name}</span>
                   <span style={{ fontFamily: MONO, fontSize: 10, color: C.faint }}>{s.id}</span>
@@ -351,6 +359,14 @@ export function TeamView({ store, setConfirm }: ViewProps) {
               onClose={() => setGuideDraft(null)}
             />
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 11 }}>
+              <PhotoField
+                src={guideDraft.image}
+                name={guideDraft.name}
+                uploading={uploading}
+                inputRef={photoInput}
+                onPick={pickPhoto}
+                onClear={() => setGuideDraft({ ...guideDraft, image: '' })}
+              />
               <Fld label="Name">
                 <Input
                   value={guideDraft.name}
@@ -415,6 +431,14 @@ export function TeamView({ store, setConfirm }: ViewProps) {
               onClose={() => setStaffDraft(null)}
             />
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 11 }}>
+              <PhotoField
+                src={staffDraft.image}
+                name={staffDraft.name}
+                uploading={uploading}
+                inputRef={photoInput}
+                onPick={pickPhoto}
+                onClear={() => setStaffDraft({ ...staffDraft, image: '' })}
+              />
               <Fld label="Name">
                 <Input
                   value={staffDraft.name}
@@ -460,6 +484,82 @@ const iconBtn: React.CSSProperties = {
   borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', color: C.body, padding: 0, flexShrink: 0,
 };
+
+/**
+ * Photo if there is one, the initial if not. A guide whose photo 404s (the
+ * bucket object was removed) falls back rather than showing a broken image.
+ */
+function Avatar({
+  src, name, size, tone = 'dark',
+}: { src: string; name: string; size: number; tone?: 'dark' | 'light' }) {
+  const [failed, setFailed] = useState(false);
+  const radius = Math.round(size * 0.23);
+  const box: React.CSSProperties = { width: size, height: size, flexShrink: 0, borderRadius: radius };
+
+  if (src && !failed) {
+    return (
+      <img
+        src={src}
+        alt=""
+        onError={() => setFailed(true)}
+        style={{ ...box, objectFit: 'cover', display: 'block', border: `1px solid ${C.line}` }}
+      />
+    );
+  }
+  return (
+    <span style={{
+      ...box,
+      background: tone === 'dark' ? C.ink : C.paper,
+      color: tone === 'dark' ? C.accent : C.body,
+      border: tone === 'dark' ? undefined : `1px solid ${C.line}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: Math.round(size * 0.37), fontWeight: 700,
+    }}>
+      {name.charAt(0).toUpperCase() || '?'}
+    </span>
+  );
+}
+
+function PhotoField({
+  src, name, uploading, inputRef, onPick, onClear,
+}: {
+  src: string;
+  name: string;
+  uploading: boolean;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onPick: (f: File | undefined) => void | Promise<void>;
+  onClear: () => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <span style={{
+        fontSize: 9.5, fontWeight: 600, letterSpacing: '.08em',
+        textTransform: 'uppercase', color: C.muted3,
+      }}>
+        Photo
+      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Avatar src={src} name={name} size={54} />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={e => void onPick(e.target.files?.[0])}
+        />
+        <Btn
+          small
+          icon={uploading ? 'spinner' : 'upload'}
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {uploading ? 'Uploading…' : src ? 'Replace photo' : 'Upload photo'}
+        </Btn>
+        {src && !uploading && <Btn small onClick={onClear}>Remove</Btn>}
+      </div>
+    </div>
+  );
+}
 
 function Fld({
   label, children, grow,

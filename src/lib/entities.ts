@@ -158,6 +158,7 @@ export const productFromRow = (r: any): Product => ({
     title: str(g.name),
     cap: num(g.capacity, num(r.default_cap, 7)),
   })),
+  image: str(r.image),
 });
 
 export const productToRow = (p: Product): any => ({
@@ -166,6 +167,7 @@ export const productToRow = (p: Product): any => ({
   label: p.label,
   default_cap: p.defaultCap ?? 7,
   grades: p.options.map(o => ({ code: o.tg, name: o.title, capacity: o.cap })),
+  image: p.image ?? '',
 });
 
 /* ── Guide / Staff (one table, split by the `role` column) ──────────────── */

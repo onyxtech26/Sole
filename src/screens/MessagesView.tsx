@@ -278,7 +278,7 @@ export function MessagesView({ store, setConfirm }: ViewProps) {
                     }))
                     : [{ v: '', t: 'No upcoming bookings' }]
                 }
-                style={{ background: C.panel, width: 320, height: 28, fontSize: 11.5 }}
+                style={{ background: C.panel, width: 320, maxWidth: '100%', height: 28, fontSize: 11.5 }}
               />
               <Btn
                 small

@@ -83,13 +83,13 @@ export function Header({ title, sub, user, store, onGo, onRefresh, syncing }: Pr
         gap: 14, padding: '0 18px', position: 'relative', zIndex: 30,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, minWidth: 0 }}>
+      <div data-r="title" style={{ display: 'flex', alignItems: 'baseline', gap: 9, minWidth: 0 }}>
         <h1 style={{
           margin: 0, fontSize: 15, fontWeight: 600, letterSpacing: '-.01em', whiteSpace: 'nowrap',
         }}>
           {title}
         </h1>
-        <span style={{
+        <span data-r="sub" style={{
           fontSize: 11.5, color: C.muted, whiteSpace: 'nowrap',
           overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
@@ -97,7 +97,9 @@ export function Header({ title, sub, user, store, onGo, onRefresh, syncing }: Pr
         </span>
       </div>
 
-      <div style={{ flex: 1 }} />
+      {/* Collapses on a phone: with it in play the title takes the whole first
+          line and the bell is pushed onto one of its own. */}
+      <div data-spacer style={{ flex: 1 }} />
 
       {/* ── command search ── */}
       <div
@@ -139,7 +141,8 @@ export function Header({ title, sub, user, store, onGo, onRefresh, syncing }: Pr
           <div
             className="drop"
             style={{
-              position: 'absolute', top: 36, right: 0, width: 392, maxHeight: 414,
+              position: 'absolute', top: 36, right: 0, width: 392,
+              maxWidth: 'calc(100vw - 20px)', maxHeight: 414,
               background: C.panel, border: `1px solid ${C.line}`, borderRadius: 8,
               boxShadow: '0 16px 40px rgba(11,18,32,.14)', display: 'flex',
               flexDirection: 'column', overflow: 'hidden', zIndex: 60,
@@ -161,7 +164,7 @@ export function Header({ title, sub, user, store, onGo, onRefresh, syncing }: Pr
               </span>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {!results.length && (
                 <p style={{
                   margin: 0, padding: '26px 16px', textAlign: 'center',
@@ -275,7 +278,8 @@ export function Header({ title, sub, user, store, onGo, onRefresh, syncing }: Pr
           <div
             className="drop"
             style={{
-              position: 'absolute', top: 36, right: 0, width: 330, maxHeight: 400,
+              position: 'absolute', top: 36, right: 0, width: 330,
+              maxWidth: 'calc(100vw - 20px)', maxHeight: 400,
               background: C.panel, border: `1px solid ${C.line}`, borderRadius: 8,
               boxShadow: '0 16px 40px rgba(11,18,32,.14)', display: 'flex',
               flexDirection: 'column', overflow: 'hidden', zIndex: 60,
@@ -301,7 +305,7 @@ export function Header({ title, sub, user, store, onGo, onRefresh, syncing }: Pr
               </Hov>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {!notes.length && (
                 <p style={{
                   margin: 0, padding: '24px 16px', textAlign: 'center',

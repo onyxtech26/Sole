@@ -12,6 +12,7 @@ import {
 import { isPlaceholderName } from '../utils/viator';
 import { download, manifestCsv } from '../utils/exports';
 import { RollingNumber } from '../ui/RollingNumber';
+import { MOBILE_QUERY, useMediaQuery } from '../ui/useMediaQuery';
 import { manifestBands } from '../utils/selectors';
 import type { TourGroup } from '../types';
 import type { ViewProps } from './types';
@@ -21,6 +22,10 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [overGroup, setOverGroup] = useState<string | null>(null);
   const [radarOpen, setRadarOpen] = useState(true);
+  // A 1080px passenger table cannot be side-scrolled usefully on a phone, and
+  // dragging is not a touch gesture here either — below 820px each passenger
+  // becomes a card and moves between bands with a select instead.
+  const compact = useMediaQuery(MOBILE_QUERY);
 
   const rows = useMemo(
     () => travelerRows(store.bookings, rangeValue),
@@ -41,6 +46,13 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
     for (const r of rows) m.set(r.id, r);
     return m;
   }, [rows]);
+
+  /* Every band a passenger can be sent to, plus the way back out. Used by the
+     queue's "add to group" select and by the touch cards. */
+  const groupOptions = useMemo(() => [
+    { v: '', t: 'Not grouped' },
+    ...bands.map((g, gi) => ({ v: g.id, t: `GRP ${gi + 1} · ${short(g.date)} ${g.time || '--:--'}` })),
+  ], [bands]);
 
   /* ── writes ── */
   const applyGroups = (groups: TourGroup[]) => {
@@ -111,7 +123,7 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div data-r="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: C.body, fontWeight: 500 }}>
           <RollingNumber value={bands.length} /> band{bands.length === 1 ? '' : 's'} ·{' '}
           <RollingNumber value={unassigned.length} /> passenger
@@ -209,38 +221,95 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
 
         {!unassigned.length && <Empty pad={22}>Everyone in this period is in a group.</Empty>}
 
-        {unassigned.length > 0 && (
-          <div style={{
-            display: 'flex', flexWrap: 'wrap', gap: 6, padding: 12,
-          }}>
+        {unassigned.length > 0 && compact && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12 }}>
             {unassigned.map((r, i) => (
-              <div
+              <PaxCard
                 key={r.id}
-                className={`grab up-sm ${dragId === r.id ? 'drag-ghost' : ''}`}
+                r={r}
+                index={i}
+                tour={productName(store.products, r.booking)}
+                currentGroup=""
+                options={groupOptions}
+                onMove={gid => applyGroups(moveTraveler(store.groups, r.id, gid || null))}
+              />
+            ))}
+          </div>
+        )}
+
+        {unassigned.length > 0 && !compact && (
+          <div data-r="scroll" style={{ overflowX: 'auto' }}>
+            {unassigned.map((r, i) => (
+              <Hov
+                key={r.id}
+                as="div"
+                className={`row ${dragId === r.id ? 'drag-ghost' : ''}`}
                 draggable
                 onDragStart={() => setDragId(r.id)}
                 onDragEnd={() => { setDragId(null); setOverGroup(null); }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 7, border: `1px solid ${C.line}`,
-                  background: C.wash, borderRadius: 6, padding: '5px 9px',
-                  animationDelay: delayOf(i),
+                  display: 'flex', alignItems: 'center', gap: 10, minWidth: 980,
+                  padding: '7px 14px', borderBottom: `1px solid ${C.lineFaint}`,
+                  fontSize: 11.5, animationDelay: delayOf(i),
                 }}
+                hover={{ background: C.wash }}
               >
+                <span className="grab" style={{ width: 24, flexShrink: 0, color: '#c9ced7' }}>⠿</span>
                 <span style={{
-                  fontSize: 9, fontWeight: 700, color: r.age === 'Child' ? C.warn : C.body,
-                  background: r.age === 'Child' ? C.warnBg : '#f0f2f5',
-                  borderRadius: 3, padding: '1px 4px',
+                  width: 96, flexShrink: 0, fontFamily: MONO, fontSize: 10.5, color: C.muted,
                 }}>
-                  {r.age === 'Child' ? 'C' : 'A'}
+                  {r.booking.ref}
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 500 }}>{r.name}</span>
-                <span style={{ fontFamily: MONO, fontSize: 9.5, color: C.faint }}>
-                  {short(r.booking.date)} {r.booking.resTime}
-                </span>
-                <span style={{ fontSize: 10.5, color: C.muted }}>
+                <span style={{
+                  width: 150, flexShrink: 0, fontWeight: 500, whiteSpace: 'nowrap',
+                  overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
                   {productName(store.products, r.booking)}
                 </span>
-              </div>
+                <span style={{ width: 52, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                  {short(r.booking.date)}
+                </span>
+                <span style={{
+                  width: 46, flexShrink: 0, fontFamily: MONO, fontSize: 10.5, color: C.muted,
+                }}>
+                  {r.booking.resTime || '—'}
+                </span>
+                <span style={{
+                  flex: 1, minWidth: 120, fontWeight: 500, display: 'flex',
+                  alignItems: 'center', gap: 6,
+                }}>
+                  <span style={{
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {r.name}
+                  </span>
+                  {isPlaceholderName(r.name) && <NameTag />}
+                </span>
+                <span style={{ width: 48, flexShrink: 0, color: C.muted2 }}>{r.age}</span>
+                <span style={{
+                  width: 112, flexShrink: 0, fontFamily: MONO, fontSize: 10.5, color: C.body,
+                }}>
+                  {r.booking.phone || '—'}
+                </span>
+                <Select
+                  value=""
+                  onChange={(e: any) => {
+                    if (!e.target.value) return;
+                    applyGroups(moveTraveler(store.groups, r.id, e.target.value));
+                  }}
+                  options={[
+                    { v: '', t: 'Add to group…' },
+                    ...bands.map((g, gi) => ({
+                      v: g.id,
+                      t: `GRP ${gi + 1} · ${short(g.date)} ${g.time}`,
+                    })),
+                  ]}
+                  style={{
+                    height: 22, width: 132, flexShrink: 0, fontSize: 11,
+                    fontWeight: 600, color: C.accentInk, background: C.panel,
+                  }}
+                />
+              </Hov>
             ))}
           </div>
         )}
@@ -438,49 +507,140 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                 </Empty>
               )}
 
-              {members.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: 12 }}>
-                  {members.map(m => (
-                    <div
+              {members.length > 0 && compact && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12 }}>
+                  {members.map((m, mi) => (
+                    <PaxCard
                       key={m.id}
-                      className={`grab ${dragId === m.id ? 'drag-ghost' : ''}`}
-                      draggable
-                      onDragStart={() => setDragId(m.id)}
-                      onDragEnd={() => { setDragId(null); setOverGroup(null); }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 7,
-                        border: `1px solid ${C.line}`, background: C.panel,
-                        borderRadius: 6, padding: '5px 9px',
-                      }}
-                    >
-                      <span style={{
-                        fontSize: 9, fontWeight: 700,
-                        color: m.age === 'Child' ? C.warn : C.body,
-                        background: m.age === 'Child' ? C.warnBg : '#f0f2f5',
-                        borderRadius: 3, padding: '1px 4px',
-                      }}>
-                        {m.age === 'Child' ? 'C' : 'A'}
-                      </span>
-                      <span style={{ fontSize: 12, fontWeight: 500 }}>{m.name}</span>
-                      <span style={{ fontFamily: MONO, fontSize: 9.5, color: C.faint }}>
-                        {m.booking.ref.slice(-6)}
-                      </span>
-                      <Hov
-                        as="button"
-                        type="button"
-                        title="Remove from this group"
-                        onClick={() => applyGroups(moveTraveler(store.groups, m.id, null))}
-                        style={{
-                          width: 16, height: 16, border: 0, background: 'transparent',
-                          borderRadius: 3, display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', cursor: 'pointer', color: '#c9ced7', padding: 0,
-                        }}
-                        hover={{ color: C.bad, background: C.badBg }}
-                      >
-                        <Icon name="x" size={10} width={2.6} />
-                      </Hov>
-                    </div>
+                      r={m}
+                      index={mi}
+                      no={mi + 1}
+                      tour={product?.name || g.tourName || g.code}
+                      guide={g.guide}
+                      time={g.time}
+                      currentGroup={g.id}
+                      options={groupOptions}
+                      onMove={gid => applyGroups(moveTraveler(store.groups, m.id, gid || null))}
+                    />
                   ))}
+                </div>
+              )}
+
+              {members.length > 0 && !compact && (
+                <div data-r="scroll" style={{ overflowX: 'auto' }}>
+                  <div style={{ minWidth: 1080 }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 10, height: 30, padding: '0 14px',
+                      borderBottom: `1px solid ${C.line}`, background: C.wash, fontSize: 9.5,
+                      fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase',
+                      color: C.muted2,
+                    }}>
+                      <span style={{ width: 34, flexShrink: 0 }}>Grp</span>
+                      <span style={{ width: 26, flexShrink: 0 }}>No</span>
+                      <span style={{ width: 96, flexShrink: 0 }}>Reference</span>
+                      <span style={{ width: 52, flexShrink: 0 }}>Date</span>
+                      <span style={{ width: 46, flexShrink: 0 }}>Res.</span>
+                      <span style={{ width: 46, flexShrink: 0 }}>Time</span>
+                      <span style={{ flex: 1, minWidth: 150 }}>Name &amp; last name</span>
+                      <span style={{ width: 48, flexShrink: 0 }}>Age</span>
+                      <span style={{ width: 112, flexShrink: 0 }}>Telephone</span>
+                      <span style={{ width: 30, flexShrink: 0, textAlign: 'center' }}>Lng</span>
+                      <span style={{ width: 104, flexShrink: 0 }}>Guide</span>
+                    </div>
+
+                    {members.map((m, mi) => (
+                      <Hov
+                        key={m.id}
+                        as="div"
+                        className={`row ${dragId === m.id ? 'drag-ghost' : ''}`}
+                        draggable
+                        onDragStart={() => setDragId(m.id)}
+                        onDragEnd={() => { setDragId(null); setOverGroup(null); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px',
+                          borderBottom: `1px solid ${C.lineFaint}`, fontSize: 11.5,
+                        }}
+                        hover={{ background: C.wash }}
+                      >
+                        <span className="grab" style={{ width: 34, flexShrink: 0, color: '#c9ced7' }}>⠿</span>
+                        <span style={{
+                          width: 26, flexShrink: 0, fontFamily: MONO, fontSize: 10.5,
+                          color: C.faint, fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {mi + 1}
+                        </span>
+                        <span style={{
+                          width: 96, flexShrink: 0, fontFamily: MONO, fontSize: 10.5,
+                          color: m.idx === 0 ? C.accentInk : C.muted,
+                        }}>
+                          {m.booking.ref}
+                        </span>
+                        <span style={{
+                          width: 52, flexShrink: 0, fontVariantNumeric: 'tabular-nums', color: C.body,
+                        }}>
+                          {short(m.booking.date)}
+                        </span>
+                        <span style={{
+                          width: 46, flexShrink: 0, fontFamily: MONO, fontSize: 10.5, color: C.muted,
+                        }}>
+                          {m.booking.resTime || '—'}
+                        </span>
+                        <span style={{
+                          width: 46, flexShrink: 0, fontFamily: MONO, fontSize: 10.5, fontWeight: 600,
+                        }}>
+                          {g.time || '—'}
+                        </span>
+                        <span style={{
+                          flex: 1, minWidth: 150, display: 'flex', alignItems: 'center', gap: 6,
+                        }}>
+                          <span style={{
+                            fontWeight: 500, whiteSpace: 'nowrap',
+                            overflow: 'hidden', textOverflow: 'ellipsis',
+                          }}>
+                            {m.name}
+                          </span>
+                          {isPlaceholderName(m.name) && <NameTag />}
+                        </span>
+                        <span style={{ width: 48, flexShrink: 0, color: C.muted2 }}>{m.age}</span>
+                        <span style={{
+                          width: 112, flexShrink: 0, fontFamily: MONO, fontSize: 10.5, color: C.body,
+                        }}>
+                          {m.booking.phone || '—'}
+                        </span>
+                        <span style={{
+                          width: 30, flexShrink: 0, textAlign: 'center', fontSize: 10,
+                          fontWeight: 600, color: C.muted2,
+                        }}>
+                          {m.booking.lang}
+                        </span>
+                        <span style={{
+                          width: 104, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+                        }}>
+                          <span style={{
+                            flex: 1, minWidth: 0, fontSize: 11, color: C.muted,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                          }}>
+                            {g.guide || '—'}
+                          </span>
+                          <Hov
+                            as="button"
+                            type="button"
+                            title="Remove from this group"
+                            onClick={() => applyGroups(moveTraveler(store.groups, m.id, null))}
+                            style={{
+                              width: 19, height: 19, flexShrink: 0, border: `1px solid ${C.line}`,
+                              background: C.panel, borderRadius: 5, display: 'flex',
+                              alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                              color: C.body, padding: 0,
+                            }}
+                            hover={{ borderColor: '#e0a3b3', color: C.bad }}
+                          >
+                            <Icon name="x" size={10} width={2.6} />
+                          </Hov>
+                        </span>
+                      </Hov>
+                    ))}
+                  </div>
                 </div>
               )}
             </Section>
@@ -488,6 +648,105 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
         })}
       </div>
     </>
+  );
+}
+
+/**
+ * One passenger as a stacked card, for touch. The same record the wide table
+ * shows in a row — reference, date, tour, phone — reflowed into three lines,
+ * with the band picker doing the job drag-and-drop does on a laptop.
+ */
+function PaxCard({
+  r, index, no, tour, guide, time, currentGroup, options, onMove,
+}: {
+  r: TravelerRow;
+  index: number;
+  no?: number;
+  tour: string;
+  guide?: string;
+  time?: string;
+  currentGroup: string;
+  options: { v: string; t: string }[];
+  onMove: (groupId: string) => void;
+}) {
+  return (
+    <div
+      className="up-sm"
+      style={{
+        border: `1px solid ${C.line}`, borderRadius: 7, background: C.panel,
+        padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 7,
+        animationDelay: delayOf(index),
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
+        {no !== undefined && (
+          <span style={{
+            fontFamily: MONO, fontSize: 10.5, color: C.faint,
+            fontVariantNumeric: 'tabular-nums', flexShrink: 0,
+          }}>
+            {no}
+          </span>
+        )}
+        <span style={{
+          flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {r.name}
+        </span>
+        {isPlaceholderName(r.name) && <NameTag />}
+        <span style={{
+          flexShrink: 0, fontSize: 9.5, fontWeight: 700,
+          color: r.age === 'Child' ? C.warn : C.body,
+          background: r.age === 'Child' ? C.warnBg : C.paper,
+          borderRadius: 4, padding: '1px 6px',
+        }}>
+          {r.age}
+        </span>
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+        fontSize: 11, color: C.muted2,
+      }}>
+        <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.accentInk }}>{r.booking.ref}</span>
+        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{short(r.booking.date)}</span>
+        {time
+          ? <span style={{ fontFamily: MONO, fontWeight: 600, color: C.ink }}>{time}</span>
+          : r.booking.resTime && <span style={{ fontFamily: MONO }}>res {r.booking.resTime}</span>}
+        <span style={{ fontSize: 10, fontWeight: 600 }}>{r.booking.lang}</span>
+        {r.booking.phone && (
+          <span style={{ fontFamily: MONO, fontSize: 10.5 }}>{r.booking.phone}</span>
+        )}
+      </div>
+
+      <div style={{
+        fontSize: 11.5, color: C.body,
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      }}>
+        {tour}
+        {guide && <span style={{ color: C.muted }}> · {guide}</span>}
+      </div>
+
+      <Select
+        value={currentGroup}
+        onChange={(e: any) => onMove(e.target.value)}
+        options={options}
+        style={{ background: C.panel, width: '100%', fontSize: 11.5, fontWeight: 600 }}
+      />
+    </div>
+  );
+}
+
+/** Tickets are issued in passenger names, so a placeholder has to be loud. */
+function NameTag() {
+  return (
+    <span style={{
+      flexShrink: 0, fontSize: 9, fontWeight: 600, letterSpacing: '.05em',
+      textTransform: 'uppercase', color: C.warn, background: C.warnBg,
+      borderRadius: 4, padding: '1px 5px',
+    }}>
+      name?
+    </span>
   );
 }
 

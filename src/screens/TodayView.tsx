@@ -9,6 +9,7 @@ import {
 } from '../utils/dates';
 import { guidePhone, paxOf, productName } from '../utils/selectors';
 import { canSeeMoney } from '../utils/access';
+import { MOBILE_QUERY, useMediaQuery } from '../ui/useMediaQuery';
 import { RollingNumber } from '../ui/RollingNumber';
 import { mergeForImport, readViatorFile } from '../utils/viator';
 import type { Booking, ImportBatch } from '../types';
@@ -37,6 +38,10 @@ export function TodayView({
   const showMoney = canSeeMoney(user.role);
   const toast = useToast();
   const t = today();
+  // The departure row is four columns wide. Wrapping it stacks those columns
+  // into a tall ragged block with the guide pill stranded mid-line, so below
+  // the shell breakpoint the same record is rendered as a card instead.
+  const compact = useMediaQuery(MOBILE_QUERY);
 
   const [busy, setBusy] = useState(false);
   const [hot, setHot] = useState(false);
@@ -130,6 +135,7 @@ export function TodayView({
             label: inc.tourName || inc.code,
             defaultCap: 7,
             options: [{ tg: inc.tg, title: inc.tgTitle || inc.tg, cap: 7 }],
+            image: '',
           });
         }
       }
@@ -274,6 +280,29 @@ export function TodayView({
             const done = sameDay && mins + 150 < nowHM;
             const isLive = sameDay && !done && mins <= nowHM;
             const lead = x.travelers[0]?.[0] || '';
+            const bar = !x.guide ? '#be3455' : isLive ? C.accent : done ? '#d3d7de' : C.ink;
+            const when = done ? 'Done' : isLive ? 'Now' : sameDay ? 'Later' : short(x.date);
+
+            if (compact) {
+              return (
+                <DepartureCard
+                  key={x.ref}
+                  index={i}
+                  time={tm}
+                  when={when}
+                  bar={bar}
+                  done={done}
+                  isLive={isLive}
+                  tour={productName(store.products, x)}
+                  tg={x.tg}
+                  meta={`${paxOf(x)} pax · ${lead} · ${x.ref}`}
+                  guide={x.guide}
+                  guidePhone={x.guide ? guidePhone(store.guides, store.staff, x.guide) : ''}
+                  onOpen={() => onOpenBooking(x.ref)}
+                />
+              );
+            }
+
             return (
               <Hov
                 key={x.ref}
@@ -610,6 +639,107 @@ export function TodayView({
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * One departure, for touch. The wide row is four columns — time, status bar,
+ * tour, guide — and wrapping it leaves the 150px guide column stranded on a
+ * line of its own, still right-aligned inside 150px, which is what made this
+ * list read as noise on a phone. The card keeps the same information in a
+ * fixed three-line shape: when + who is guiding, what the tour is, and who is
+ * on it. The status colour moves to a left edge stripe so the row is still
+ * scannable at a glance without spending a column on it.
+ */
+function DepartureCard({
+  index, time, when, bar, done, isLive, tour, tg, meta, guide, guidePhone: phone, onOpen,
+}: {
+  index: number;
+  time: string;
+  when: string;
+  bar: string;
+  done: boolean;
+  isLive: boolean;
+  tour: string;
+  tg: string;
+  meta: string;
+  guide: string;
+  guidePhone: string;
+  onOpen: () => void;
+}) {
+  return (
+    <Hov
+      as="div"
+      className="row up-sm"
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e: any) => { if (e.key === 'Enter') onOpen(); }}
+      style={{
+        display: 'flex', flexDirection: 'column', gap: 5,
+        padding: '11px 14px 11px 12px', borderLeft: `3px solid ${bar}`,
+        borderBottom: `1px solid ${C.lineFaint}`, cursor: 'pointer',
+        animationDelay: delayOf(index), opacity: done ? 0.72 : 1,
+      }}
+      hover={{ background: C.wash }}
+    >
+      {/* when · who */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{
+          fontFamily: MONO, fontSize: 13, fontWeight: 600, letterSpacing: '-.03em',
+        }}>
+          {time || '—'}
+        </span>
+        <span style={{
+          fontSize: 9, letterSpacing: '.06em', textTransform: 'uppercase', fontWeight: 600,
+          color: done ? '#a9b0ba' : isLive ? C.accentInk : C.muted,
+        }}>
+          {when}
+        </span>
+        <div style={{ flex: 1 }} />
+        <span style={{
+          flexShrink: 0, maxWidth: '55%', whiteSpace: 'nowrap',
+          overflow: 'hidden', textOverflow: 'ellipsis',
+          fontSize: 11.5, fontWeight: 600, padding: '2px 8px', borderRadius: 5,
+          background: guide ? '#f0f2f5' : C.badBg,
+          color: guide ? '#3f4756' : C.bad,
+        }}>
+          {guide || 'No guide'}
+        </span>
+      </div>
+
+      {/* what */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, minWidth: 0 }}>
+        <span style={{
+          flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {tour}
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 9.5, color: '#a9b0ba', flexShrink: 0 }}>
+          {tg}
+        </span>
+      </div>
+
+      {/* who is on it — and, when there is a guide, how to reach them */}
+      <div style={{
+        display: 'flex', alignItems: 'baseline', gap: 8,
+        fontSize: 11.5, color: '#6b737f', minWidth: 0,
+      }}>
+        <span style={{
+          flex: 1, minWidth: 0, whiteSpace: 'nowrap',
+          overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {meta}
+        </span>
+        <span style={{
+          flexShrink: 0, fontFamily: MONO, fontSize: 10,
+          color: guide ? C.muted : C.bad, fontWeight: guide ? 400 : 600,
+        }}>
+          {guide ? phone : 'assign a guide'}
+        </span>
+      </div>
+    </Hov>
   );
 }
 

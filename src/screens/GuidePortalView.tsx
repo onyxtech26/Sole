@@ -105,7 +105,7 @@ export function GuidePortalView({ store, user }: ViewProps) {
         </Card>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div data-r="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <Btn icon="chevronLeft" onClick={() => setDay(d => addDays(d, -1))} style={{ padding: '5px 9px' }}>
           Previous day
         </Btn>
@@ -284,6 +284,7 @@ export function GuidePortalView({ store, user }: ViewProps) {
               tabIndex={0}
               onClick={() => setDay(b.date)}
               onKeyDown={(e: any) => { if (e.key === 'Enter') setDay(b.date); }}
+              data-r="listrow"
               style={{
                 display: 'flex', alignItems: 'center', gap: 11, padding: '10px 15px',
                 borderBottom: `1px solid ${C.lineFaint}`, cursor: 'pointer',
@@ -299,7 +300,7 @@ export function GuidePortalView({ store, user }: ViewProps) {
               <span style={{ fontFamily: MONO, fontSize: 11.5, width: 46, flexShrink: 0 }}>
                 {b.tourTime || b.resTime || '—'}
               </span>
-              <span style={{
+              <span data-grow style={{
                 flex: 1, minWidth: 0, fontSize: 12, whiteSpace: 'nowrap',
                 overflow: 'hidden', textOverflow: 'ellipsis',
               }}>

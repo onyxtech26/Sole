@@ -120,7 +120,6 @@ export function BookingDrawer({ store, booking, isNew, onClose, onSave, onDelete
     { label: 'Reserved for', value: draft.resTime || '—' },
     { label: 'Passengers', value: `${paxOf(draft)} · ${draft.travelers.filter(t => t[1] === 'Adult').length} adult, ${draft.travelers.filter(t => t[1] === 'Child').length} child` },
     { label: 'Language', value: draft.lang },
-    { label: 'Phone', value: draft.phone || '—' },
     { label: 'Viator payout', value: eur(draft.gross) },
   ];
 
@@ -203,13 +202,19 @@ export function BookingDrawer({ store, booking, isNew, onClose, onSave, onDelete
           </Hov>
         </div>
 
-        {/* body */}
+        {/* body — minHeight: 0 so this scrolls instead of growing and pushing
+            the action bar off the bottom of the drawer. */}
         <div style={{
-          flex: 1, overflowY: 'auto', padding: '16px 18px',
+          flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 18px',
           display: 'flex', flexDirection: 'column', gap: 18,
         }}>
+          {/* auto-fit rather than a breakpoint: this grid lives inside a
+              fixed-width drawer, so it has to respond to its own box, not to
+              the viewport. Two columns when they fit, one when they do not. */}
           {!isNew && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(148px,1fr))', gap: 12,
+            }}>
               {fields.map(f => (
                 <div key={f.label} style={{
                   display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0,
@@ -260,6 +265,19 @@ export function BookingDrawer({ store, booking, isNew, onClose, onSave, onDelete
                   />
                 </Row>
               </>
+            )}
+
+            {/* Viator sends a phone number, but travellers correct it over
+                WhatsApp constantly, so operations has to be able to fix it. */}
+            {!isNew && (
+              <Row label="Phone">
+                <Input
+                  value={draft.phone}
+                  onChange={(e: any) => set({ phone: e.target.value })}
+                  placeholder="+39 …"
+                  style={{ background: C.panel }}
+                />
+              </Row>
             )}
 
             <Row label="Tour">
@@ -521,7 +539,7 @@ export function BookingDrawer({ store, booking, isNew, onClose, onSave, onDelete
         </div>
 
         {/* footer */}
-        <div style={{
+        <div data-r="drawerfoot" style={{
           flexShrink: 0, padding: '12px 18px', borderTop: `1px solid ${C.line}`,
           display: 'flex', gap: 8,
         }}>

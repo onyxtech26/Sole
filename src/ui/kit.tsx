@@ -407,6 +407,7 @@ export function Modal({
   return createPortal(
     <div
       className="fade"
+      data-r="modalwrap"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: 'fixed', inset: 0, zIndex: 200,
@@ -416,11 +417,16 @@ export function Modal({
     >
       <div
         className="pop"
+        data-r="modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
         style={{
-          width: '100%', maxWidth: width, maxHeight: '90vh', overflowY: 'auto',
+          // dvh, not vh: a phone's collapsing address bar otherwise leaves the
+          // footer buttons under the browser chrome. Divided by --ui-scale for
+          // the same reason the shell is — <html> carries a zoom.
+          width: '100%', maxWidth: width,
+          maxHeight: 'calc(90dvh / var(--ui-scale))', overflowY: 'auto',
           background: C.panel, border: `1px solid ${C.line}`, borderRadius: 10,
           boxShadow: '0 24px 60px rgba(11,18,32,.2)',
         }}
@@ -455,7 +461,7 @@ export function ModalHead({
 
 export function ModalFoot({ children }: { children: ReactNode }) {
   return (
-    <div style={{
+    <div data-r="modalfoot" style={{
       display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8,
       padding: '12px 16px', borderTop: `1px solid ${C.lineSoft}`, background: C.wash,
     }}>

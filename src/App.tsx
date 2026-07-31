@@ -156,7 +156,10 @@ function Shell() {
     <div
       data-r="shell"
       style={{
-        display: 'flex', height: '100vh', width: '100%', overflow: 'hidden',
+        // Divided by --ui-scale: <html> is zoomed, so a raw 100vh would render
+        // 10% taller than the window and push the shell off the bottom.
+        display: 'flex', height: 'calc(100vh / var(--ui-scale))',
+        width: '100%', overflow: 'hidden',
         background: C.paper, fontSize: 13, lineHeight: 1.45,
       }}
     >
@@ -168,7 +171,16 @@ function Shell() {
         badges={badges}
       />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      {/* minHeight: 0 is load-bearing, not defensive. On desktop the shell is a
+          row, so this column is stretched to the shell's height and `main` gets
+          a bounded box to scroll inside. On a phone the shell turns into a
+          column and height becomes the main axis — and a flex item's default
+          `min-height: auto` refuses to shrink below its content, so this box
+          grows past 100dvh, `main` never overflows, and the shell's
+          overflow:hidden simply clips the page. Nothing scrolls. */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0,
+      }}>
         <Header
           title={title}
           sub={sub}
@@ -179,8 +191,8 @@ function Shell() {
           syncing={syncing}
         />
 
-        <main data-r="pad" style={{ flex: 1, overflowY: 'auto', padding: 18 }}>
-          <div style={{
+        <main data-r="pad" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 18 }}>
+          <div data-r="stack" style={{
             maxWidth: 1520, margin: '0 auto',
             display: 'flex', flexDirection: 'column', gap: 14,
           }}>
