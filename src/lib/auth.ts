@@ -65,8 +65,34 @@ export async function signIn(
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    // Deliberately vague: never reveal which half of the pair was wrong.
-    return { error: 'Incorrect username or password.' };
+    /* A wrong password stays deliberately vague — never reveal which half of
+       the pair was wrong, or this becomes a way to enumerate accounts.
+       Everything else is a *configuration* failure, not a credential one, and
+       reporting those as "incorrect password" sends whoever is setting the
+       account up hunting for the wrong problem entirely. */
+    if (!error) return { error: 'Incorrect username or password.' };
+
+    // No status at all means the request never reached Supabase.
+    if (!error.status) {
+      return { error: 'Cannot reach the server. Check the connection and try again.' };
+    }
+    if (error.code === 'email_not_confirmed') {
+      return {
+        error: 'This account exists but its email is not confirmed. '
+          + 'An administrator must confirm it in Supabase Auth.',
+      };
+    }
+    if (error.code === 'user_banned') {
+      return { error: 'This account is disabled. Contact an administrator.' };
+    }
+    if (error.code === 'over_request_rate_limit') {
+      return { error: 'Too many attempts. Wait a minute and try again.' };
+    }
+    if (error.code === 'invalid_credentials' || error.status === 400) {
+      return { error: 'Incorrect username or password.' };
+    }
+    // Anything else (project paused, key rotated, 5xx) is worth showing as-is.
+    return { error: error.message || 'Sign in failed.' };
   }
   const user = await toUser(data.user.id);
   if (!user) {
