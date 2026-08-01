@@ -22,14 +22,14 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
   const dayBookings = store.bookings.filter(b => b.date === date && b.status !== 'Cancelled');
   const totalPax = bands.reduce((n, g) => n + g.pax, 0);
 
-  /* Passengers on this date who never made it into a band — a band needs both
-     a tour time and a guide, so either missing leaves them off the runsheet. */
-  const ungroupedPax = useMemo(
-    () => dayBookings
-      .filter(b => !b.guide || !b.tourTime)
-      .reduce((n, b) => n + b.travelers.length, 0),
-    [dayBookings],
-  );
+  /* Passengers on this date who are not printed on any band above. Counted by
+     what actually reached the runsheet rather than by guide/time, so this and
+     the bands can never disagree. */
+  const ungroupedPax = useMemo(() => {
+    const total = dayBookings.reduce((n, b) => n + b.travelers.length, 0);
+    const onSheet = bands.reduce((n, g) => n + g.rows.length, 0);
+    return Math.max(0, total - onSheet);
+  }, [dayBookings, bands]);
 
   const guidesOnDuty = useMemo(() => {
     const names = [...new Set(bands.map(g => g.guide).filter(Boolean))];

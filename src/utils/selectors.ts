@@ -204,54 +204,124 @@ export interface ManifestBand {
   fill: string; pax: number; cap: number; rows: ManifestRow[];
 }
 
+/**
+ * The day's runsheet — one band per group built on the Grouping screen.
+ *
+ * The band *is* the group: its tour, option, time, guide and capacity are the
+ * group's own, and its passengers are exactly the travellers dragged into it.
+ * This used to re-derive bands from the bookings instead, keyed on
+ * time|product|grade|guide, which quietly split a single group whenever it
+ * mixed tour grades — operations would build one band of six and the manifest
+ * would print two. A group is an operational decision; the manifest reports it
+ * rather than second-guessing it.
+ *
+ * Bookings that carry a guide and a tour time without belonging to any group
+ * still appear, grouped the old way, so setting those two fields directly on a
+ * booking is not a silent way to fall off the runsheet.
+ */
 export function manifestBands(store: StoreData, date: string, guideFilter?: string): ManifestBand[] {
-  const day = store.bookings.filter(x =>
-    x.date === date && x.guide && x.tourTime && x.status !== 'Cancelled'
-    && (!guideFilter || x.guide === guideFilter),
-  );
+  const live = store.bookings.filter(x => x.status !== 'Cancelled');
+  const byRef = new Map(live.map(b => [b.ref, b]));
+
+  const rowFor = (b: Booking, i: number, no: number): ManifestRow => ({
+    no: String(no),
+    ref: b.ref,
+    name: b.travelers[i]?.[0] ?? '',
+    age: b.travelers[i]?.[1] ?? 'Adult',
+    // "Lead" is the booking's first traveller — the person Viator holds the
+    // contact details for — not the first person to land in the band.
+    role: i === 0 ? 'Lead' : 'Guest',
+    phone: i === 0 ? b.phone : '',
+    lang: b.lang,
+  });
+
+  /* ── bands from the groups themselves ── */
+  const groups = store.groups
+    .filter(g => g.date === date && g.time && g.guide
+      && (!guideFilter || g.guide === guideFilter))
+    .sort((a, b) => (a.time + a.tourName).localeCompare(b.time + b.tourName));
+
+  const bands: Omit<ManifestBand, 'no'>[] = [];
+
+  for (const g of groups) {
+    let no = 0;
+    const rows: ManifestRow[] = [];
+    for (const m of g.members) {
+      const [ref, idxRaw] = m.split('#');
+      const b = byRef.get(ref);
+      const i = Number(idxRaw);
+      // A member can dangle if its booking was cancelled or its travellers
+      // were trimmed after grouping. Skip rather than print a blank line.
+      if (!b || !Number.isInteger(i) || !b.travelers[i]) continue;
+      no += 1;
+      rows.push(rowFor(b, i, no));
+    }
+    if (!rows.length) continue;
+
+    const cap = g.cap || capOf(store.products, g.code, g.tg);
+    bands.push({
+      tour: productName(store.products, { code: g.code, tourName: g.tourName }),
+      tg: g.tg,
+      tgTitle: tgTitleOf(store.products, { code: g.code, tg: g.tg, tgTitle: '' }),
+      time: g.time,
+      guide: g.guide,
+      guidePhone: guidePhone(store.guides, store.staff, g.guide),
+      fill: `${rows.length}/${cap} pax`,
+      pax: rows.length,
+      cap,
+      rows,
+    });
+  }
+
+  /* ── anything scheduled but never grouped ── */
+  const grouped = assignedIds(store.groups);
+  const loose = live.filter(x =>
+    x.date === date && x.guide && x.tourTime
+    && (!guideFilter || x.guide === guideFilter)
+    && x.travelers.some((_, i) => !grouped[`${x.ref}#${i}`]));
 
   const keys: string[] = [];
-  for (const x of day) {
+  for (const x of loose) {
     const k = [x.tourTime, x.code, x.tg, x.guide].join('|');
     if (!keys.includes(k)) keys.push(k);
   }
   keys.sort();
 
-  return keys.map((k, gi) => {
+  for (const k of keys) {
     const [time, code, tg, guide] = k.split('|');
-    const items = day.filter(x =>
+    const items = loose.filter(x =>
       x.tourTime === time && x.code === code && x.tg === tg && x.guide === guide);
-
-    const cap = capOf(store.products, code, tg);
-    const pax = items.reduce((n, x) => n + paxOf(x), 0);
 
     let no = 0;
     const rows: ManifestRow[] = [];
     for (const x of items) {
-      x.travelers.forEach((tv, i) => {
+      x.travelers.forEach((_, i) => {
+        if (grouped[`${x.ref}#${i}`]) return;
         no += 1;
-        rows.push({
-          no: String(no), ref: x.ref, name: tv[0], age: tv[1],
-          role: i === 0 ? 'Lead' : 'Guest', phone: i === 0 ? x.phone : '', lang: x.lang,
-        });
+        rows.push(rowFor(x, i, no));
       });
     }
+    if (!rows.length) continue;
 
+    const cap = capOf(store.products, code, tg);
     const first = items[0];
-    return {
-      no: String(gi + 1),
+    bands.push({
       tour: first ? productName(store.products, first) : code,
       tg,
       tgTitle: first ? tgTitleOf(store.products, first) : tg,
       time,
       guide,
       guidePhone: guidePhone(store.guides, store.staff, guide),
-      fill: `${pax}/${cap} pax`,
-      pax,
+      fill: `${rows.length}/${cap} pax`,
+      pax: rows.length,
       cap,
       rows,
-    };
-  });
+    });
+  }
+
+  return bands
+    .sort((a, b) => a.time.localeCompare(b.time))
+    .map((band, gi) => ({ ...band, no: String(gi + 1) }));
 }
 
 /* ── message templates ──────────────────────────────────────────────────── */
