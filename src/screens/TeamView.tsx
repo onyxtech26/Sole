@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../ui/Icon';
 import {
   Btn, C, Empty, Hov, Input, MONO, Modal, ModalFoot, ModalHead, Section, Select, useToast,
@@ -35,6 +35,8 @@ export function TeamView({ store, user, setConfirm }: ViewProps) {
   const [staffDraft, setStaffDraft] = useState<StaffMember | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [uploading, setUploading] = useState(false);
+  /** Which guide card has its review list open. One at a time. */
+  const [openReviews, setOpenReviews] = useState<string | null>(null);
   const photoInput = useRef<HTMLInputElement>(null);
   const t = today();
 
@@ -240,18 +242,42 @@ export function TeamView({ store, user, setConfirm }: ViewProps) {
                     >
                       {g.avail}
                     </Hov>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11,
-                      color: C.muted2,
-                    }}>
-                      <Icon name="star" size={11} color={C.accent} />
-                      {g.rating.toFixed(1)}
+                    <Hov
+                      as="button"
+                      type="button"
+                      disabled={!g.reviews.length}
+                      aria-expanded={openReviews === g.id}
+                      title={g.reviews.length ? 'Show the reviews behind this score' : 'No reviews yet'}
+                      onClick={() => setOpenReviews(v => (v === g.id ? null : g.id))}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11,
+                        color: C.muted2, border: 0, background: 'transparent',
+                        padding: '1px 4px', borderRadius: 5, marginLeft: -4,
+                        cursor: g.reviews.length ? 'pointer' : 'default',
+                      }}
+                      hover={g.reviews.length ? { background: C.accentWash, color: C.ink } : undefined}
+                    >
+                      <Icon name="star" size={11} color={C.accent} fill={C.accent} />
+                      <strong style={{ fontVariantNumeric: 'tabular-nums' }}>
+                        {g.rating.toFixed(1)}
+                      </strong>
                       <span style={{ color: C.faint }}>
                         {g.reviews.length
-                          ? `(${g.reviews.length})`
-                          : '(no reviews)'}
+                          ? `${g.reviews.length} review${g.reviews.length === 1 ? '' : 's'}`
+                          : 'no reviews'}
                       </span>
-                    </span>
+                      {g.reviews.length > 0 && (
+                        <Icon
+                          name="chevronDown"
+                          size={11}
+                          color={C.faint}
+                          style={{
+                            transform: openReviews === g.id ? 'rotate(180deg)' : 'none',
+                            transition: 'transform .24s var(--ease)',
+                          }}
+                        />
+                      )}
+                    </Hov>
                     <span style={{ fontSize: 11, color: C.muted2 }}>{g.langs}</span>
                   </div>
 
@@ -263,6 +289,8 @@ export function TeamView({ store, user, setConfirm }: ViewProps) {
                       {g.skills}
                     </p>
                   )}
+
+                  <ReviewPanel open={openReviews === g.id} reviews={g.reviews} />
 
                   <div style={{
                     display: 'flex', gap: 14, marginTop: 11, paddingTop: 10,
@@ -492,6 +520,79 @@ const iconBtn: React.CSSProperties = {
   borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', color: C.body, padding: 0, flexShrink: 0,
 };
+
+/**
+ * The reviews behind a guide's score, on the card itself.
+ *
+ * Height is animated to the content's own measurement rather than to a
+ * max-height guess, so three reviews and thirty both open at the right size
+ * and neither snaps at the end.
+ *
+ * The `grid-template-rows: 0fr -> 1fr` idiom looks tidier but does not work
+ * here: the inner wrapper needs `overflow: hidden` to clip while collapsed,
+ * and an overflow container's automatic minimum size is zero, so the `fr`
+ * track resolves to 0 in a container with no definite height and the panel
+ * never opens. Measured and confirmed before switching to this.
+ */
+function ReviewPanel({ open, reviews }: { open: boolean; reviews: GuideReview[] }) {
+  const inner = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  // Re-measure when it opens and whenever the list changes underneath it.
+  useEffect(() => {
+    setHeight(open ? inner.current?.scrollHeight ?? 0 : 0);
+  }, [open, reviews]);
+
+  if (!reviews.length) return null;
+  return (
+    <div
+      style={{
+        height,
+        overflow: 'hidden',
+        opacity: open ? 1 : 0,
+        marginTop: open ? 10 : 0,
+        transition: 'height .32s var(--ease), opacity .24s ease, margin-top .32s var(--ease)',
+      }}
+      aria-hidden={!open}
+    >
+      <div ref={inner}>
+        <div style={{
+          border: `1px solid ${C.lineSoft}`, borderRadius: 7, background: C.wash,
+          display: 'flex', flexDirection: 'column',
+          maxHeight: 210, overflowY: 'auto',
+        }}>
+          {reviews.map(r => (
+            <div
+              key={r.id}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px',
+                borderBottom: `1px solid ${C.lineFaint}`,
+              }}
+            >
+              <Stars value={r.rating} size={10} />
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {r.note
+                  ? (
+                    <span style={{ fontSize: 11.5, lineHeight: 1.45, textWrap: 'pretty' }}>
+                      {r.note}
+                    </span>
+                  )
+                  : (
+                    <span style={{ fontSize: 11.5, color: C.muted, fontStyle: 'italic' }}>
+                      Rated {r.rating} of 5, no comment
+                    </span>
+                  )}
+                <span style={{ fontSize: 10, color: C.muted }}>
+                  {short(r.date)}{r.by ? ` · ${r.by}` : ''}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /** Five stars, filled to `value`. Interactive when `onPick` is supplied. */
 function Stars({

@@ -31,11 +31,6 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
     return Math.max(0, total - onSheet);
   }, [dayBookings, bands]);
 
-  const guidesOnDuty = useMemo(() => {
-    const names = [...new Set(bands.map(g => g.guide).filter(Boolean))];
-    return names.length ? names.join(', ') : '—';
-  }, [bands]);
-
   /* Stamped when the sheet is rendered, which is what "generated" means on a
      printed copy. Recomputed when the day or its data changes, not per render. */
   const printedOn = useMemo(
@@ -139,12 +134,25 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16,
           borderBottom: `1.5px solid ${C.ink}`, paddingBottom: 15, flexWrap: 'wrap',
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <img
-              src="/logo.png"
-              alt="SOLE"
-              style={{ height: 18, width: 'auto', display: 'block', alignSelf: 'flex-start' }}
-            />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {/* The brand lockup is drawn rather than loaded: the wordmark PNG is
+                1212px wide and was being scaled to 18px, which prints soft and
+                fails the whole header if the request does not land. The mark is
+                a small icon and degrades to nothing if it is missing, so the
+                name always survives. */}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img
+                src="/logo-mark.png"
+                alt=""
+                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                style={{ height: 22, width: 'auto', display: 'block' }}
+              />
+              <span style={{
+                fontSize: 17, fontWeight: 700, letterSpacing: '.18em', lineHeight: 1,
+              }}>
+                SOLE
+              </span>
+            </span>
             <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-.01em' }}>
               Sun Tours Travels — Daily Manifest
             </span>
@@ -158,17 +166,16 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
           </div>
         </div>
 
-        <div data-r="g4" style={{
-          display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, margin: '18px 0 20px',
+        {/* Two figures, not four. "Not grouped" and "Guides on duty" were
+            dropped at the client's request: the guide holding the sheet knows
+            who is on duty, and ungrouped passengers describe work that belongs
+            back in the app rather than on a runsheet. The ungrouped count still
+            appears as the toolbar's warning button, where it is actionable. */}
+        <div data-r="g2" style={{
+          display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, margin: '18px 0 20px',
         }}>
           <Stat label="Tours" value={String(bands.length)} />
           <Stat label="Passengers" value={String(totalPax)} />
-          {/* On screen these two help operations spot a gap before printing.
-              On the printed sheet they are noise: the guide holding the paper
-              already knows who is on duty, and "not grouped" describes work
-              that belongs back in the app, not on the runsheet. */}
-          <Stat label="Not grouped" value={String(ungroupedPax)} printHide />
-          <Stat label="Guides on duty" value={guidesOnDuty} small printHide />
         </div>
 
         {!bands.length && (
@@ -269,17 +276,14 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
 
 const cell: React.CSSProperties = { padding: '6px 12px', verticalAlign: 'middle' };
 
-/** One of the figures the manifest opens with. */
+/** One of the two figures the manifest opens with. */
 function Stat({
-  label, value, small, printHide,
-}: { label: string; value: string; small?: boolean; printHide?: boolean }) {
+  label, value, small,
+}: { label: string; value: string; small?: boolean }) {
   return (
-    <div
-      data-print={printHide ? 'hide' : undefined}
-      style={{
-        border: `1px solid ${C.lineSoft}`, background: C.wash, borderRadius: 7, padding: '11px 13px',
-      }}
-    >
+    <div style={{
+      border: `1px solid ${C.lineSoft}`, background: C.wash, borderRadius: 7, padding: '11px 13px',
+    }}>
       <p style={{
         margin: '0 0 4px', fontSize: 9, fontWeight: 600, letterSpacing: '.09em',
         textTransform: 'uppercase', color: C.muted2,

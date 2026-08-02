@@ -416,10 +416,6 @@ select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
   [data-r='doc'] { border: 0 !important; padding: 0 !important; border-radius: 0 !important; }
   [data-r='scroll'] { overflow: visible !important; }
 
-  /* Two of the four summary cards are screen-only, so the row closes up rather
-     than printing with a pair of empty columns beside it. */
-  [data-r='g4'] { grid-template-columns: repeat(2, 1fr) !important; }
-
   /* A runsheet is read across a whole page: never split a band's header from
      its passengers, or a passenger row across two sheets. */
   [data-r='doc'] table { break-inside: auto; }
