@@ -4,12 +4,13 @@ import {
   Btn, C, Empty, Hov, Input, MONO, Section, SectionHead, Select, useToast,
 } from '../ui/kit';
 import { commit } from '../lib/store';
-import { delayOf, short, shiftTime, uid } from '../utils/dates';
+import { delayOf, eur, short, shiftTime, uid } from '../utils/dates';
 import {
   assignedIds, autoGroup, capOf, moveTraveler, productName,
   syncBookingsToGroups, travelerRows, type TravelerRow,
 } from '../utils/selectors';
 import { isPlaceholderName } from '../utils/viator';
+import { canSeeMoney } from '../utils/access';
 import { download, manifestCsv } from '../utils/exports';
 import { RollingNumber } from '../ui/RollingNumber';
 import { MOBILE_QUERY, useMediaQuery } from '../ui/useMediaQuery';
@@ -17,7 +18,10 @@ import { manifestBands } from '../utils/selectors';
 import type { TourGroup } from '../types';
 import type { ViewProps } from './types';
 
-export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
+export function GroupingView({ store, user, rangeValue, setConfirm }: ViewProps) {
+  // Group pricing is a manager's decision, so the money column follows the same
+  // rule as everywhere else: operations and guides never see it.
+  const showMoney = canSeeMoney(user.role);
   const toast = useToast();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overGroup, setOverGroup] = useState<string | null>(null);
@@ -46,6 +50,37 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
     for (const r of rows) m.set(r.id, r);
     return m;
   }, [rows]);
+
+  /**
+   * Which tint a reservation's rows carry. Consecutive reservations alternate,
+   * so a four-passenger booking reads as one block of colour rather than four
+   * unrelated lines — that is the whole point: group size at a glance.
+   * Keyed on the order the refs appear, not on a hash, so neighbours always
+   * differ.
+   */
+  const tintIndex = (list: { booking: { ref: string } }[]) => {
+    const m = new Map<string, number>();
+    let n = 0;
+    for (const r of list) if (!m.has(r.booking.ref)) m.set(r.booking.ref, n++);
+    return m;
+  };
+
+  /** The reservation price belongs to the booking, so it is printed once per
+      booking rather than repeated against every traveller — repeating it reads
+      as a per-head price and invites double counting. */
+  const priceOnce = (list: { id: string; booking: { ref: string } }[]) => {
+    const seen = new Set<string>();
+    const show = new Set<string>();
+    for (const r of list) {
+      if (seen.has(r.booking.ref)) continue;
+      seen.add(r.booking.ref);
+      show.add(r.id);
+    }
+    return show;
+  };
+
+  const queueTint = useMemo(() => tintIndex(unassigned), [unassigned]);
+  const queuePrice = useMemo(() => priceOnce(unassigned), [unassigned]);
 
   /* Every band a passenger can be sent to, plus the way back out. Used by the
      queue's "add to group" select and by the touch cards. */
@@ -229,6 +264,7 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                 r={r}
                 index={i}
                 tour={productName(store.products, r.booking)}
+                price={showMoney && queuePrice.has(r.id) ? eur(r.booking.gross) : undefined}
                 currentGroup=""
                 options={groupOptions}
                 onMove={gid => applyGroups(moveTraveler(store.groups, r.id, gid || null))}
@@ -239,7 +275,9 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
 
         {unassigned.length > 0 && !compact && (
           <div data-r="scroll" style={{ overflowX: 'auto' }}>
-            {unassigned.map((r, i) => (
+            {unassigned.map((r, i) => {
+              const even = (queueTint.get(r.booking.ref) ?? 0) % 2 === 0;
+              return (
               <Hov
                 key={r.id}
                 as="div"
@@ -251,8 +289,9 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                   display: 'flex', alignItems: 'center', gap: 10, minWidth: 980,
                   padding: '7px 14px', borderBottom: `1px solid ${C.lineFaint}`,
                   fontSize: 11.5, animationDelay: delayOf(i),
+                  background: even ? C.bandA : C.bandB,
                 }}
-                hover={{ background: C.wash }}
+                hover={{ background: even ? C.bandAHover : C.bandBHover }}
               >
                 <span className="grab" style={{ width: 24, flexShrink: 0, color: '#c9ced7' }}>⠿</span>
                 <span style={{
@@ -285,6 +324,15 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                   </span>
                   {isPlaceholderName(r.name) && <NameTag />}
                 </span>
+                {showMoney && (
+                  <span style={{
+                    width: 78, flexShrink: 0, textAlign: 'right', fontFamily: MONO,
+                    fontSize: 10.5, fontWeight: 600,
+                    color: queuePrice.has(r.id) ? C.ink : 'transparent',
+                  }}>
+                    {eur(r.booking.gross)}
+                  </span>
+                )}
                 <span style={{ width: 48, flexShrink: 0, color: C.muted2 }}>{r.age}</span>
                 <span style={{
                   width: 112, flexShrink: 0, fontFamily: MONO, fontSize: 10.5, color: C.body,
@@ -310,7 +358,8 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                   }}
                 />
               </Hov>
-            ))}
+              );
+            })}
           </div>
         )}
       </Section>
@@ -328,6 +377,8 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {bands.map((g, gi) => {
           const members = g.members.map(m => rowById.get(m)).filter(Boolean) as TravelerRow[];
+          const memberTint = tintIndex(members);
+          const memberPrice = priceOnce(members);
           const over = overGroup === g.id;
           const full = members.length >= g.cap;
           const product = store.products.find(p => p.code === g.code);
@@ -516,6 +567,7 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                       index={mi}
                       no={mi + 1}
                       tour={product?.name || g.tourName || g.code}
+                      price={showMoney && memberPrice.has(m.id) ? eur(m.booking.gross) : undefined}
                       guide={g.guide}
                       time={g.time}
                       currentGroup={g.id}
@@ -542,13 +594,18 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                       <span style={{ width: 46, flexShrink: 0 }}>Res.</span>
                       <span style={{ width: 46, flexShrink: 0 }}>Time</span>
                       <span style={{ flex: 1, minWidth: 150 }}>Name &amp; last name</span>
+                      {showMoney && (
+                        <span style={{ width: 78, flexShrink: 0, textAlign: 'right' }}>Price</span>
+                      )}
                       <span style={{ width: 48, flexShrink: 0 }}>Age</span>
                       <span style={{ width: 112, flexShrink: 0 }}>Telephone</span>
                       <span style={{ width: 30, flexShrink: 0, textAlign: 'center' }}>Lng</span>
                       <span style={{ width: 104, flexShrink: 0 }}>Guide</span>
                     </div>
 
-                    {members.map((m, mi) => (
+                    {members.map((m, mi) => {
+                      const even = (memberTint.get(m.booking.ref) ?? 0) % 2 === 0;
+                      return (
                       <Hov
                         key={m.id}
                         as="div"
@@ -559,8 +616,9 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                         style={{
                           display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px',
                           borderBottom: `1px solid ${C.lineFaint}`, fontSize: 11.5,
+                          background: even ? C.bandA : C.bandB,
                         }}
-                        hover={{ background: C.wash }}
+                        hover={{ background: even ? C.bandAHover : C.bandBHover }}
                       >
                         <span className="grab" style={{ width: 34, flexShrink: 0, color: '#c9ced7' }}>⠿</span>
                         <span style={{
@@ -601,6 +659,15 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                           </span>
                           {isPlaceholderName(m.name) && <NameTag />}
                         </span>
+                        {showMoney && (
+                          <span style={{
+                            width: 78, flexShrink: 0, textAlign: 'right', fontFamily: MONO,
+                            fontSize: 10.5, fontWeight: 600,
+                            color: memberPrice.has(m.id) ? C.ink : 'transparent',
+                          }}>
+                            {eur(m.booking.gross)}
+                          </span>
+                        )}
                         <span style={{ width: 48, flexShrink: 0, color: C.muted2 }}>{m.age}</span>
                         <span style={{
                           width: 112, flexShrink: 0, fontFamily: MONO, fontSize: 10.5, color: C.body,
@@ -639,7 +706,8 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
                           </Hov>
                         </span>
                       </Hov>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -657,7 +725,7 @@ export function GroupingView({ store, rangeValue, setConfirm }: ViewProps) {
  * with the band picker doing the job drag-and-drop does on a laptop.
  */
 function PaxCard({
-  r, index, no, tour, guide, time, currentGroup, options, onMove,
+  r, index, no, tour, guide, time, price, currentGroup, options, onMove,
 }: {
   r: TravelerRow;
   index: number;
@@ -665,6 +733,8 @@ function PaxCard({
   tour: string;
   guide?: string;
   time?: string;
+  /** Shown once per reservation, and only to roles that may see money. */
+  price?: string;
   currentGroup: string;
   options: { v: string; t: string }[];
   onMove: (groupId: string) => void;
@@ -694,6 +764,13 @@ function PaxCard({
           {r.name}
         </span>
         {isPlaceholderName(r.name) && <NameTag />}
+        {price && (
+          <span style={{
+            flexShrink: 0, fontFamily: MONO, fontSize: 11, fontWeight: 600, color: C.ink,
+          }}>
+            {price}
+          </span>
+        )}
         <span style={{
           flexShrink: 0, fontSize: 9.5, fontWeight: 700,
           color: r.age === 'Child' ? C.warn : C.body,

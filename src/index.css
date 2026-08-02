@@ -10,11 +10,20 @@
 
 /* ── design tokens ──────────────────────────────────────────────────────── */
 :root {
+  /* ── surfaces ─────────────────────────────────────────────────────────────
+     Softened from the handoff's originals (paper #f6f7f9, panel #fff) after
+     the operator reported real eye strain within an hour. The cause is glare,
+     not contrast: body copy is already a muted #5b6472, but a field of pure
+     white at full luminance is what tires you across a long shift. Panels come
+     off pure white and the page behind them goes a step deeper, so the two
+     separate by tone rather than by brightness alone.
+
+     Print is unaffected — the print block forces a white sheet.             */
   --ink: #0b1220;          /* near-black brand surface + primary text        */
-  --paper: #f6f7f9;        /* app background                                 */
-  --panel: #fff;           /* cards, header, table surfaces                  */
-  --line: #e5e8ed;         /* hairline borders                               */
-  --line-soft: #eef0f4;    /* inner dividers                                 */
+  --paper: #eef1f5;        /* app background                                 */
+  --panel: #fbfcfd;        /* cards, header, table surfaces                  */
+  --line: #e2e6ec;         /* hairline borders                               */
+  --line-soft: #eaedf2;    /* inner dividers                                 */
   --muted: #8a919e;        /* secondary text                                 */
   --muted-soft: #98a0ac;   /* tertiary text, icon strokes                    */
   --faint: #b9bfc8;        /* placeholder / disabled text                    */
@@ -406,4 +415,14 @@ select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
   [data-r='pad'] { overflow: visible !important; padding: 0 !important; }
   [data-r='doc'] { border: 0 !important; padding: 0 !important; border-radius: 0 !important; }
   [data-r='scroll'] { overflow: visible !important; }
+
+  /* Two of the four summary cards are screen-only, so the row closes up rather
+     than printing with a pair of empty columns beside it. */
+  [data-r='g4'] { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* A runsheet is read across a whole page: never split a band's header from
+     its passengers, or a passenger row across two sheets. */
+  [data-r='doc'] table { break-inside: auto; }
+  [data-r='doc'] tr { break-inside: avoid; break-after: auto; }
+  [data-r='doc'] thead { display: table-header-group; }
 }

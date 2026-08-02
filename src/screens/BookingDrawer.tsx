@@ -10,6 +10,7 @@ import {
 } from '../utils/selectors';
 import { isPlaceholderName } from '../utils/viator';
 import { copyText } from '../utils/exports';
+import { PAYMENT_STATUSES } from '../types';
 import type { Booking, StoreData, Traveler } from '../types';
 
 const WF_KEYS = [
@@ -23,7 +24,7 @@ const blank = (): Booking => ({
   ref: `BR-${Date.now().toString().slice(-10)}`,
   code: '', tg: 'TG1', date: today(), resTime: '', tourTime: '', lang: 'EN',
   guide: '', phone: '', travelers: [['', 'Adult']], gross: 0, spent: 0,
-  wf: [0, 0, 0, 0], status: 'Confirmed', payment: 'Unpaid', notes: '',
+  wf: [0, 0, 0, 0], status: 'Confirmed', payment: 'Unpaid', refundPct: 0, notes: '',
   namesLocked: false, source: 'manual',
   tourName: '', tgTitle: '', meetingPoint: '', currency: 'EUR', leadTraveler: '',
   assignedDriver: 'None', okStatus: true, checkedIn: [], namesComplete: false,
@@ -336,11 +337,42 @@ export function BookingDrawer({ store, booking, isNew, onClose, onSave, onDelete
             <Row label="Payment">
               <Select
                 value={draft.payment}
-                onChange={(e: any) => set({ payment: e.target.value as Booking['payment'] })}
-                options={['Paid', 'Partly paid', 'Unpaid', 'Refunded'].map(p => ({ v: p, t: p }))}
+                onChange={(e: any) => {
+                  const payment = e.target.value as Booking['payment'];
+                  // Leaving the partial state clears the percentage, so a
+                  // booking can never read "Paid" and still carry "refunded 30%".
+                  set(payment === 'Partial refund'
+                    ? { payment, refundPct: draft.refundPct || 50 }
+                    : { payment, refundPct: 0 });
+                }}
+                options={PAYMENT_STATUSES.map(p => ({ v: p, t: p }))}
                 style={{ background: C.panel }}
               />
             </Row>
+
+            {draft.payment === 'Partial refund' && (
+              <Row label="Refunded">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    step="1"
+                    value={String(draft.refundPct)}
+                    onChange={(e: any) => set({
+                      refundPct: Math.min(100, Math.max(0, Number(e.target.value) || 0)),
+                    })}
+                    style={{ background: C.panel, width: 88 }}
+                  />
+                  <span style={{ fontSize: 12, color: C.muted, whiteSpace: 'nowrap' }}>
+                    % of {eur(draft.gross)} ={' '}
+                    <strong style={{ color: C.ink }}>
+                      {eur((draft.gross * draft.refundPct) / 100)}
+                    </strong>
+                  </span>
+                </div>
+              </Row>
+            )}
 
             <Row label="Cost">
               <Input

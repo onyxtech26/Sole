@@ -22,14 +22,17 @@ export type { IconName };
 export const MONO = "'JetBrains Mono', monospace";
 
 export const C = {
+  /* Kept in step with the :root custom properties in index.css — the same
+     surfaces, softened away from pure white so a full shift on this screen is
+     not tiring. See the note there for the reasoning. */
   ink: '#0b1220',
   inkHover: '#1b2437',
-  paper: '#f6f7f9',
-  panel: '#fff',
-  line: '#e5e8ed',
-  lineSoft: '#eef0f4',
-  lineFaint: '#f2f4f7',
-  border: '#e0e4ea',
+  paper: '#eef1f5',
+  panel: '#fbfcfd',
+  line: '#e2e6ec',
+  lineSoft: '#eaedf2',
+  lineFaint: '#eff2f6',
+  border: '#dce1e8',
   text: '#0b1220',
   body: '#5b6472',
   muted: '#8a919e',
@@ -43,7 +46,13 @@ export const C = {
   /* Focus halo. Functional affordance, not decoration — the one place the flat
      rule bends, because a 1px border alone is not a legible focus state. */
   accentRing: 'rgba(253,151,7,.12)',
-  wash: '#fafbfc',
+  wash: '#f5f7fa',
+  /* Row banding. One reservation's travellers share a tint, and consecutive
+     reservations alternate, so group size is readable without counting. Kept
+     at the very edge of perceptible — the operator stares at this list for
+     hours, and anything stronger turns a table into a colour chart. */
+  bandA: '#f3f9f5', bandAHover: '#eaf4ee',
+  bandB: '#f2f7fc', bandBHover: '#e7f0f9',
   good: '#0f6b48', goodBg: '#e8f5ef',
   warn: '#8a5106', warnBg: '#fdf3e3',
   bad: '#9c2743', badBg: '#fdecef', badLine: '#f3c9d2',
@@ -61,6 +70,11 @@ export const PAY_COLORS: Record<string, { bg: string; fg: string }> = {
   Paid: { bg: C.goodBg, fg: C.good },
   'Partly paid': { bg: C.warnBg, fg: C.warn },
   Unpaid: { bg: C.badBg, fg: C.bad },
+  // Both refunds read as "money went back out", so they share the neutral
+  // treatment — a refund is not an error state, it is a closed one.
+  'Full refund': { bg: C.paper, fg: C.body },
+  'Partial refund': { bg: C.infoBg, fg: C.info },
+  // Legacy wire value, in case a row is read before the mapper touches it.
   Refunded: { bg: C.paper, fg: C.body },
 };
 

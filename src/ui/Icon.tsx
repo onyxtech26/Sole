@@ -85,19 +85,22 @@ interface IconProps {
   size?: number;
   color?: string;
   width?: number;
+  /** Solid interior. The set is stroke-only by design; a filled star is the
+      one place a glyph carries state rather than just meaning. */
+  fill?: string;
   className?: string;
   style?: CSSProperties;
 }
 
 export function Icon({
-  name, size = 14, color = 'currentColor', width = 2, className, style,
+  name, size = 14, color = 'currentColor', width = 2, fill = 'none', className, style,
 }: IconProps) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={fill}
       stroke={color}
       strokeWidth={width}
       strokeLinecap="round"

@@ -14,8 +14,8 @@
    ══════════════════════════════════════════════════════════════════════════ */
 
 import type {
-  Booking, Customer, Expense, Guide, ImportBatch, Product, StaffMember, StoreKey,
-  Template, TourGroup, Traveler, TravelerType,
+  Booking, Customer, Expense, Guide, GuideReview, ImportBatch, Product, StaffMember,
+  StoreKey, Template, TourGroup, Traveler, TravelerType,
 } from '../types';
 
 const num = (v: unknown, d = 0): number =>
@@ -69,11 +69,26 @@ function parseTravelers(row: any): Traveler[] {
 const encodeTravelers = (list: Traveler[]): string[] =>
   list.map(([name, type]) => `${name} (${type})`);
 
-/* ── payment wording: design says "Partly paid", the column says otherwise ── */
+/* ── payment wording ────────────────────────────────────────────────────────
+   The column's vocabulary predates the design's. Rather than rewrite existing
+   rows, translate: 'Partially Paid' <-> 'Partly paid' and 'Refunded' <->
+   'Full refund'. 'Partial Refund' is the one value that is the same on both
+   sides, because it was added for this build.                               */
+const PAY_FROM_ROW: Record<string, Booking['payment']> = {
+  'Partially Paid': 'Partly paid',
+  Refunded: 'Full refund',
+  'Partial Refund': 'Partial refund',
+};
+const PAY_TO_ROW: Record<string, string> = {
+  'Partly paid': 'Partially Paid',
+  'Full refund': 'Refunded',
+  'Partial refund': 'Partial Refund',
+};
+
 const payFromRow = (v: string): Booking['payment'] =>
-  v === 'Partially Paid' ? 'Partly paid' : ((v || 'Unpaid') as Booking['payment']);
+  PAY_FROM_ROW[v] ?? ((v || 'Unpaid') as Booking['payment']);
 const payToRow = (v: Booking['payment']): string =>
-  v === 'Partly paid' ? 'Partially Paid' : v || 'Unpaid';
+  PAY_TO_ROW[v] ?? (v || 'Unpaid');
 
 /* ── Booking ────────────────────────────────────────────────────────────── */
 export const bookingFromRow = (r: any): Booking => {
@@ -92,6 +107,7 @@ export const bookingFromRow = (r: any): Booking => {
     travelers,
     gross: num(r.amount),
     spent: num(r.spent),
+    refundPct: num(r.refund_pct),
     wf: [0, 1, 2, 3].map(i => wf[i] ?? 0),
     status: (str(r.status, 'Confirmed') as Booking['status']),
     payment: payFromRow(str(r.payment_status)),
@@ -128,6 +144,7 @@ export const bookingToRow = (b: Booking): any => ({
   pax_children: b.travelers.filter(t => t[1] === 'Child').length,
   amount: b.gross ?? 0,
   spent: b.spent ?? 0,
+  refund_pct: b.refundPct ?? 0,
   workflow: b.wf ?? [0, 0, 0, 0],
   status: b.status,
   payment_status: payToRow(b.payment),
@@ -175,16 +192,37 @@ const availFromRow = (v: string): Guide['avail'] =>
   v === 'On Break' ? 'On break' : ((v || 'Active') as Guide['avail']);
 const availToRow = (v: Guide['avail']): string => (v === 'On break' ? 'On Break' : v || 'Active');
 
-export const guideFromRow = (r: any): Guide => ({
-  id: str(r.id),
-  name: str(r.name),
-  phone: str(r.phone),
-  langs: arr<string>(r.languages).map(l => langToCode(str(l))).join(' · '),
-  skills: arr<string>(r.skills).join(', '),
-  rating: num(r.performance_rating, 5),
-  avail: availFromRow(str(r.availability)),
-  image: str(r.image),
-});
+/** Reviews are the source of truth for a guide's score; the stored
+    performance_rating is the average we keep in step for the other build. */
+const reviewsFromRow = (v: unknown): GuideReview[] =>
+  arr<any>(v).map(x => ({
+    id: str(x.id) || `rv-${str(x.date)}-${num(x.rating)}`,
+    date: str(x.date),
+    rating: Math.min(5, Math.max(1, num(x.rating, 5))),
+    note: str(x.note),
+    by: str(x.by),
+  }));
+
+export const averageRating = (reviews: GuideReview[], fallback = 5): number => {
+  if (!reviews.length) return fallback;
+  const sum = reviews.reduce((n, r) => n + r.rating, 0);
+  return Math.round((sum / reviews.length) * 10) / 10;
+};
+
+export const guideFromRow = (r: any): Guide => {
+  const reviews = reviewsFromRow(r.reviews);
+  return {
+    id: str(r.id),
+    name: str(r.name),
+    phone: str(r.phone),
+    langs: arr<string>(r.languages).map(l => langToCode(str(l))).join(' · '),
+    skills: arr<string>(r.skills).join(', '),
+    rating: averageRating(reviews, num(r.performance_rating, 5)),
+    avail: availFromRow(str(r.availability)),
+    image: str(r.image),
+    reviews,
+  };
+};
 
 export const guideToRow = (g: Guide): any => ({
   id: g.id,
@@ -193,10 +231,13 @@ export const guideToRow = (g: Guide): any => ({
   phone: g.phone ?? '',
   languages: splitList(g.langs).map(codeToLang),
   skills: splitList(g.skills),
-  performance_rating: g.rating ?? 5,
+  // Kept in step with the reviews so anything reading the column alone still
+  // sees the right number.
+  performance_rating: averageRating(g.reviews ?? [], g.rating ?? 5),
   availability: availToRow(g.avail),
   image: g.image ?? '',
   job_title: '',
+  reviews: g.reviews ?? [],
 });
 
 export const staffFromRow = (r: any): StaffMember => ({

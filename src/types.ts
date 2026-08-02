@@ -24,8 +24,17 @@ export type TravelerType = 'Adult' | 'Child';
 export type Traveler = [string, TravelerType];
 
 export type BookingStatus = 'Confirmed' | 'Modified' | 'Pending' | 'Cancelled';
-/** UI wording. Mapped to the DB's 'Partially Paid' on write. */
-export type PaymentStatus = 'Paid' | 'Partly paid' | 'Unpaid' | 'Refunded';
+/**
+ * UI wording. 'Partly paid' maps to the DB's 'Partially Paid', and
+ * 'Full refund' to its 'Refunded' — the column keeps its original values so
+ * existing rows stay valid. 'Partial refund' is the one genuinely new state.
+ */
+export type PaymentStatus =
+  | 'Paid' | 'Partly paid' | 'Unpaid' | 'Full refund' | 'Partial refund';
+
+export const PAYMENT_STATUSES: PaymentStatus[] = [
+  'Paid', 'Partly paid', 'Unpaid', 'Full refund', 'Partial refund',
+];
 
 export interface Booking {
   ref: string;
@@ -40,6 +49,7 @@ export interface Booking {
   travelers: Traveler[];
   gross: number;           // revenue
   spent: number;           // direct cost
+  refundPct: number;       // 0-100, only meaningful when payment is a partial refund
   wf: number[];            // [names, confirmed, time sent, review] as 0/1
   status: BookingStatus;
   payment: PaymentStatus;
@@ -83,15 +93,26 @@ export interface Product {
   image: string;   // public URL in the media bucket ('' = none)
 }
 
+/** One review of a guide, on a five-star scale. */
+export interface GuideReview {
+  id: string;
+  date: string;       // YYYY-MM-DD
+  rating: number;     // 1-5
+  note: string;
+  by: string;         // who recorded it
+}
+
 export interface Guide {
   id: string;
   name: string;
   phone: string;
   langs: string;      // display string, "EN · IT"
   skills: string;     // display string, comma separated
+  /** Average of `reviews`, or the hand-set figure while there are none. */
   rating: number;
   avail: 'Active' | 'On break' | 'Unavailable';
   image: string;
+  reviews: GuideReview[];
 }
 
 export interface StaffMember {

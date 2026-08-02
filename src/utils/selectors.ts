@@ -4,7 +4,7 @@
 import type {
   Booking, Guide, Product, StaffMember, StoreData, TourGroup, Traveler,
 } from '../types';
-import { longDate, shiftTime, uid } from './dates';
+import { addDays, longDate, shiftTime, uid } from './dates';
 
 /* ── catalogue lookups ──────────────────────────────────────────────────── */
 
@@ -355,9 +355,58 @@ export interface Note {
   id: string; title: string; body: string; dot: string; screen: string; ref?: string;
 }
 
+/**
+ * How far ahead tickets have to be arranged. Venues differ — some want three
+ * days, some five — so the reminder fires at the longest of them and covers
+ * both rather than firing twice.
+ */
+export const TICKET_LEAD_DAYS = 5;
+
+/** Ticket states that still need someone to act. */
+const TICKETS_OUTSTANDING = ['Pending', 'Reserved'];
+
 export function notifications(store: StoreData, today: string): Note[] {
   const out: Note[] = [];
   const upcoming = store.bookings.filter(b => b.date >= today && b.status !== 'Cancelled');
+
+  /* ── tickets to prepare ──
+     First in the list because it is the only item with a hard external
+     deadline: miss it and the tour cannot run, where the others are catch-up
+     work. Ticket status lives on the group, so an ungrouped departure inside
+     the window counts as outstanding too — nobody has booked its tickets. */
+  const horizon = addDays(today, TICKET_LEAD_DAYS);
+  const groupOfTraveler = new Map<string, TourGroup>();
+  for (const g of store.groups) for (const m of g.members) groupOfTraveler.set(m, g);
+
+  const groupFor = (b: Booking): TourGroup | null => {
+    for (let i = 0; i < b.travelers.length; i += 1) {
+      const g = groupOfTraveler.get(`${b.ref}#${i}`);
+      if (g) return g;
+    }
+    return null;
+  };
+
+  const ticketsDue = upcoming.filter(b => {
+    if (b.date > horizon) return false;
+    const g = groupFor(b);
+    return !g || TICKETS_OUTSTANDING.includes(g.ticketStatus);
+  });
+
+  if (ticketsDue.length) {
+    const soonest = ticketsDue.reduce((a, b) => (b.date < a ? b.date : a), ticketsDue[0].date);
+    const days = Math.max(0, Math.round(
+      (new Date(`${soonest}T00:00:00`).getTime() - new Date(`${today}T00:00:00`).getTime()) / 86400000,
+    ));
+    const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`;
+    out.push({
+      id: 'n-tickets',
+      title: `${ticketsDue.length} departure${ticketsDue.length === 1 ? '' : 's'} need tickets`,
+      body: `Within the next ${TICKET_LEAD_DAYS} days — the soonest departs ${when}, on ${longDate(soonest)}. `
+        + 'Mark a band as Reserved or Issued in Grouping once its tickets are arranged.',
+      dot: '#fd9707',
+      screen: 'groups',
+    });
+  }
 
   const noGuide = upcoming.filter(b => !b.guide || !b.tourTime);
   if (noGuide.length) {

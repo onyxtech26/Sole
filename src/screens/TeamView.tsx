@@ -4,10 +4,11 @@ import {
   Btn, C, Empty, Hov, Input, MONO, Modal, ModalFoot, ModalHead, Section, Select, useToast,
 } from '../ui/kit';
 import { commit } from '../lib/store';
+import { averageRating } from '../lib/entities';
 import { uploadFile } from '../lib/upload';
-import { today } from '../utils/dates';
+import { short, today, uid } from '../utils/dates';
 import { RollingNumber } from '../ui/RollingNumber';
-import type { Guide, StaffMember } from '../types';
+import type { Guide, GuideReview, StaffMember } from '../types';
 import type { ViewProps } from './types';
 
 type Tab = 'guides' | 'staff';
@@ -26,7 +27,7 @@ const nextId = (prefix: string, existing: { id: string }[]): string => {
   return `${prefix}-${(nums.length ? Math.max(...nums) : prefix === 'G' ? 200 : 300) + 1}`;
 };
 
-export function TeamView({ store, setConfirm }: ViewProps) {
+export function TeamView({ store, user, setConfirm }: ViewProps) {
   const toast = useToast();
   const [tab, setTab] = useState<Tab>('guides');
   const [query, setQuery] = useState('');
@@ -167,7 +168,7 @@ export function TeamView({ store, setConfirm }: ViewProps) {
             if (tab === 'guides') {
               setGuideDraft({
                 id: nextId('G', store.guides), name: '', phone: '', langs: 'EN',
-                skills: '', rating: 5, avail: 'Active', image: '',
+                skills: '', rating: 5, avail: 'Active', image: '', reviews: [],
               });
             } else {
               setStaffDraft({
@@ -245,6 +246,11 @@ export function TeamView({ store, setConfirm }: ViewProps) {
                     }}>
                       <Icon name="star" size={11} color={C.accent} />
                       {g.rating.toFixed(1)}
+                      <span style={{ color: C.faint }}>
+                        {g.reviews.length
+                          ? `(${g.reviews.length})`
+                          : '(no reviews)'}
+                      </span>
                     </span>
                     <span style={{ fontSize: 11, color: C.muted2 }}>{g.langs}</span>
                   </div>
@@ -381,14 +387,6 @@ export function TeamView({ store, setConfirm }: ViewProps) {
                     placeholder="+39 …"
                   />
                 </Fld>
-                <Fld label="Rating">
-                  <Input
-                    type="number" step="0.1" min={1} max={5}
-                    value={String(guideDraft.rating)}
-                    onChange={(e: any) => setGuideDraft({ ...guideDraft, rating: Number(e.target.value) || 5 })}
-                    style={{ width: 84 }}
-                  />
-                </Fld>
                 <Fld label="Availability">
                   <Select
                     value={guideDraft.avail}
@@ -412,6 +410,16 @@ export function TeamView({ store, setConfirm }: ViewProps) {
                   placeholder="Colosseum, Roman Forum, VIP escort"
                 />
               </Fld>
+
+              <Reviews
+                reviews={guideDraft.reviews}
+                by={user.name}
+                onChange={reviews => setGuideDraft({
+                  ...guideDraft,
+                  reviews,
+                  rating: averageRating(reviews, 5),
+                })}
+              />
             </div>
             <ModalFoot>
               <Btn onClick={() => setGuideDraft(null)}>Cancel</Btn>
@@ -484,6 +492,167 @@ const iconBtn: React.CSSProperties = {
   borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', color: C.body, padding: 0, flexShrink: 0,
 };
+
+/** Five stars, filled to `value`. Interactive when `onPick` is supplied. */
+function Stars({
+  value, size = 13, onPick,
+}: { value: number; size?: number; onPick?: (n: number) => void }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+      {[1, 2, 3, 4, 5].map(n => {
+        const on = n <= Math.round(value);
+        const star = (
+          <Icon
+            name="star"
+            size={size}
+            color={on ? C.accent : C.faint2}
+            fill={on ? C.accent : 'none'}
+          />
+        );
+        if (!onPick) return <span key={n} style={{ display: 'flex' }}>{star}</span>;
+        return (
+          <Hov
+            key={n}
+            as="button"
+            type="button"
+            title={`${n} star${n === 1 ? '' : 's'}`}
+            onClick={() => onPick(n)}
+            style={{
+              border: 0, background: 'transparent', padding: 1, cursor: 'pointer',
+              display: 'flex', borderRadius: 3,
+            }}
+            hover={{ background: C.accentWash }}
+          >
+            {star}
+          </Hov>
+        );
+      })}
+    </span>
+  );
+}
+
+/**
+ * A guide's review history. The average shown everywhere else is derived from
+ * these, so the score can always be traced back to the reviews behind it —
+ * a hand-typed 5.0 told you nothing about how many people it represented.
+ */
+function Reviews({
+  reviews, by, onChange,
+}: { reviews: GuideReview[]; by: string; onChange: (r: GuideReview[]) => void }) {
+  const [rating, setRating] = useState(5);
+  const [note, setNote] = useState('');
+
+  const avg = averageRating(reviews, 0);
+
+  const add = () => {
+    onChange([
+      {
+        id: uid('rv'),
+        date: today(),
+        rating,
+        note: note.trim(),
+        by,
+      },
+      ...reviews,
+    ]);
+    setRating(5);
+    setNote('');
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{
+          fontSize: 9.5, fontWeight: 600, letterSpacing: '.08em',
+          textTransform: 'uppercase', color: C.muted3,
+        }}>
+          Reviews
+        </span>
+        <div style={{ flex: 1 }} />
+        {reviews.length > 0 && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5 }}>
+            <Stars value={avg} size={12} />
+            <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{avg.toFixed(1)}</strong>
+            <span style={{ color: C.muted }}>
+              from {reviews.length} review{reviews.length === 1 ? '' : 's'}
+            </span>
+          </span>
+        )}
+      </div>
+
+      {/* new review */}
+      <div style={{
+        border: `1px solid ${C.line}`, borderRadius: 7, padding: '9px 11px',
+        display: 'flex', flexDirection: 'column', gap: 8, background: C.wash,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <Stars value={rating} onPick={setRating} />
+          <span style={{ fontSize: 11.5, color: C.muted }}>
+            {rating} of 5
+          </span>
+        </div>
+        <div data-r="fields" style={{ display: 'flex', gap: 8 }}>
+          <Input
+            value={note}
+            onChange={(e: any) => setNote(e.target.value)}
+            placeholder="What did the traveller say?"
+            style={{ flex: 1, background: C.panel }}
+          />
+          <Btn small icon="plus" onClick={add}>Add review</Btn>
+        </div>
+      </div>
+
+      {reviews.length === 0 && (
+        <span style={{ fontSize: 11.5, color: C.muted }}>
+          No reviews yet — the score stays at 5.0 until the first one is recorded.
+        </span>
+      )}
+
+      {reviews.length > 0 && (
+        <div style={{
+          maxHeight: 190, overflowY: 'auto', border: `1px solid ${C.lineSoft}`,
+          borderRadius: 7, display: 'flex', flexDirection: 'column',
+        }}>
+          {reviews.map(r => (
+            <div
+              key={r.id}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 9, padding: '8px 11px',
+                borderBottom: `1px solid ${C.lineFaint}`,
+              }}
+            >
+              <Stars value={r.rating} size={11} />
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {r.note && (
+                  <span style={{ fontSize: 11.5, lineHeight: 1.45, textWrap: 'pretty' }}>
+                    {r.note}
+                  </span>
+                )}
+                <span style={{ fontSize: 10, color: C.muted }}>
+                  {short(r.date)}{r.by ? ` · ${r.by}` : ''}
+                </span>
+              </div>
+              <Hov
+                as="button"
+                type="button"
+                title="Remove this review"
+                onClick={() => onChange(reviews.filter(x => x.id !== r.id))}
+                style={{
+                  width: 20, height: 20, flexShrink: 0, border: 0, background: 'transparent',
+                  borderRadius: 4, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', cursor: 'pointer', color: C.faint2, padding: 0,
+                }}
+                hover={{ color: C.bad, background: C.badBg }}
+              >
+                <Icon name="x" size={11} width={2.6} />
+              </Hov>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * Photo if there is one, the initial if not. A guide whose photo 404s (the

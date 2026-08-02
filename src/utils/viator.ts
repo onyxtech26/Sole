@@ -139,6 +139,7 @@ export function rowToBooking(row: Row): RowResult {
       wf: [0, 0, 0, 0],
       status,
       payment: 'Paid',                 // Viator collects up front; this is the payout
+      refundPct: 0,
       notes: '',
       namesLocked: false,
       source: 'viator_import',

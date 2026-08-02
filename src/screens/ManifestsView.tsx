@@ -163,8 +163,12 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
         }}>
           <Stat label="Tours" value={String(bands.length)} />
           <Stat label="Passengers" value={String(totalPax)} />
-          <Stat label="Not grouped" value={String(ungroupedPax)} />
-          <Stat label="Guides on duty" value={guidesOnDuty} small />
+          {/* On screen these two help operations spot a gap before printing.
+              On the printed sheet they are noise: the guide holding the paper
+              already knows who is on duty, and "not grouped" describes work
+              that belongs back in the app, not on the runsheet. */}
+          <Stat label="Not grouped" value={String(ungroupedPax)} printHide />
+          <Stat label="Guides on duty" value={guidesOnDuty} small printHide />
         </div>
 
         {!bands.length && (
@@ -265,12 +269,17 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
 
 const cell: React.CSSProperties = { padding: '6px 12px', verticalAlign: 'middle' };
 
-/** One of the four figures the manifest opens with. */
-function Stat({ label, value, small }: { label: string; value: string; small?: boolean }) {
+/** One of the figures the manifest opens with. */
+function Stat({
+  label, value, small, printHide,
+}: { label: string; value: string; small?: boolean; printHide?: boolean }) {
   return (
-    <div style={{
-      border: `1px solid ${C.lineSoft}`, background: C.wash, borderRadius: 7, padding: '11px 13px',
-    }}>
+    <div
+      data-print={printHide ? 'hide' : undefined}
+      style={{
+        border: `1px solid ${C.lineSoft}`, background: C.wash, borderRadius: 7, padding: '11px 13px',
+      }}
+    >
       <p style={{
         margin: '0 0 4px', fontSize: 9, fontWeight: 600, letterSpacing: '.09em',
         textTransform: 'uppercase', color: C.muted2,
