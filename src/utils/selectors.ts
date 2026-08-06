@@ -200,7 +200,11 @@ export interface ManifestRow {
 
 export interface ManifestBand {
   no: string; tour: string; tg: string; tgTitle: string;
-  time: string; guide: string; guidePhone: string;
+  /** Departure time. */
+  time: string;
+  /** Venue entry / ticket time — when the group has to be at the gate. */
+  ticketTime: string;
+  guide: string; guidePhone: string;
   fill: string; pax: number; cap: number; rows: ManifestRow[];
 }
 
@@ -264,6 +268,7 @@ export function manifestBands(store: StoreData, date: string, guideFilter?: stri
       tg: g.tg,
       tgTitle: tgTitleOf(store.products, { code: g.code, tg: g.tg, tgTitle: '' }),
       time: g.time,
+      ticketTime: g.ticketTime,
       guide: g.guide,
       guidePhone: guidePhone(store.guides, store.staff, g.guide),
       fill: `${rows.length}/${cap} pax`,
@@ -310,6 +315,8 @@ export function manifestBands(store: StoreData, date: string, guideFilter?: stri
       tg,
       tgTitle: first ? tgTitleOf(store.products, first) : tg,
       time,
+      // These never went through Grouping, so nobody set an entry time.
+      ticketTime: '',
       guide,
       guidePhone: guidePhone(store.guides, store.staff, guide),
       fill: `${rows.length}/${cap} pax`,

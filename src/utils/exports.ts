@@ -36,7 +36,7 @@ export const toCsv = (rows: unknown[][]): string =>
 
 /* ── manifests ──────────────────────────────────────────────────────────── */
 const MANIFEST_HEAD = [
-  'Group', 'Tour', 'Option', 'Time', 'Guide', 'Guide phone',
+  'Group', 'Tour', 'Option', 'Tour time', 'Entry time', 'Guide', 'Guide phone',
   'No', 'Reference', 'Name', 'Age', 'Role', 'Phone', 'Language',
 ];
 
@@ -45,7 +45,7 @@ export function manifestCsv(bands: ManifestBand[]): string {
   for (const g of bands) {
     for (const r of g.rows) {
       lines.push([
-        g.no, g.tour, `${g.tg} ${g.tgTitle}`, g.time, g.guide, g.guidePhone,
+        g.no, g.tour, `${g.tg} ${g.tgTitle}`, g.time, g.ticketTime, g.guide, g.guidePhone,
         r.no, r.ref, r.name, r.age, r.role, r.phone, r.lang,
       ]);
     }
@@ -60,7 +60,9 @@ export function manifestText(bands: ManifestBand[], date: string): string {
     head + '\n\n' +
     bands
       .map(g =>
-        `GRP ${g.no} · ${g.tour} (${g.tg}) · ${g.time} · ${g.guide} ${g.guidePhone} · ${g.fill}\n` +
+        `GRP ${g.no} · ${g.tour} (${g.tg}) · tour ${g.time}`
+        + `${g.ticketTime ? ` · entry ${g.ticketTime}` : ''}`
+        + ` · ${g.guide} ${g.guidePhone} · ${g.fill}\n` +
         g.rows
           .map(r => `  ${r.no}. ${r.name} (${r.age})${r.phone ? ` · ${r.phone}` : ''}`)
           .join('\n'),
@@ -116,7 +118,8 @@ export async function manifestPdf(bands: ManifestBand[], date: string): Promise<
     doc.setFontSize(9);
     doc.setTextColor(120, 128, 140);
     doc.text(
-      `${g.time} · ${g.tgTitle} · ${g.guide}${g.guidePhone ? ` ${g.guidePhone}` : ''} · ${g.fill}`,
+      `tour ${g.time}${g.ticketTime ? ` · entry ${g.ticketTime}` : ''} · ${g.tgTitle}`
+      + ` · ${g.guide}${g.guidePhone ? ` ${g.guidePhone}` : ''} · ${g.fill}`,
       40, y + 13,
     );
 

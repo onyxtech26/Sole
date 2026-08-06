@@ -6,7 +6,7 @@ import {
 import { commit } from '../lib/store';
 import { delayOf, eur, short, shiftTime, uid } from '../utils/dates';
 import {
-  assignedIds, autoGroup, capOf, moveTraveler, productName,
+  assignedIds, autoGroup, capOf, moveTraveler, productName, tgTitleOf,
   syncBookingsToGroups, travelerRows, type TravelerRow,
 } from '../utils/selectors';
 import { isPlaceholderName } from '../utils/viator';
@@ -264,6 +264,7 @@ export function GroupingView({ store, user, rangeValue, setConfirm }: ViewProps)
                 r={r}
                 index={i}
                 tour={productName(store.products, r.booking)}
+                option={tgTitleOf(store.products, r.booking)}
                 price={showMoney && queuePrice.has(r.id) ? eur(r.booking.gross) : undefined}
                 currentGroup=""
                 options={groupOptions}
@@ -286,7 +287,7 @@ export function GroupingView({ store, user, rangeValue, setConfirm }: ViewProps)
                 onDragStart={() => setDragId(r.id)}
                 onDragEnd={() => { setDragId(null); setOverGroup(null); }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 10, minWidth: 980,
+                  display: 'flex', alignItems: 'center', gap: 10, minWidth: 1150,
                   padding: '7px 14px', borderBottom: `1px solid ${C.lineFaint}`,
                   fontSize: 11.5, animationDelay: delayOf(i),
                   background: even ? C.bandA : C.bandB,
@@ -323,6 +324,26 @@ export function GroupingView({ store, user, rangeValue, setConfirm }: ViewProps)
                     {r.name}
                   </span>
                   {isPlaceholderName(r.name) && <NameTag />}
+                </span>
+                {/* Which option this reservation booked. The tour name alone is
+                    not enough to group by: the same tour runs as a 24-seat
+                    group and a 7-seat semi-private, and they cannot be mixed. */}
+                <span style={{
+                  width: 168, flexShrink: 0, display: 'flex', alignItems: 'baseline', gap: 5,
+                  minWidth: 0,
+                }}>
+                  <span style={{
+                    fontFamily: MONO, fontSize: 10, fontWeight: 600,
+                    color: C.accentInk, flexShrink: 0,
+                  }}>
+                    {r.booking.tg}
+                  </span>
+                  <span style={{
+                    flex: 1, minWidth: 0, fontSize: 10.5, color: C.muted,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {tgTitleOf(store.products, r.booking)}
+                  </span>
                 </span>
                 {showMoney && (
                   <span style={{
@@ -567,6 +588,7 @@ export function GroupingView({ store, user, rangeValue, setConfirm }: ViewProps)
                       index={mi}
                       no={mi + 1}
                       tour={product?.name || g.tourName || g.code}
+                      option={tgTitleOf(store.products, m.booking)}
                       price={showMoney && memberPrice.has(m.id) ? eur(m.booking.gross) : undefined}
                       guide={g.guide}
                       time={g.time}
@@ -725,12 +747,14 @@ export function GroupingView({ store, user, rangeValue, setConfirm }: ViewProps)
  * with the band picker doing the job drag-and-drop does on a laptop.
  */
 function PaxCard({
-  r, index, no, tour, guide, time, price, currentGroup, options, onMove,
+  r, index, no, tour, option, guide, time, price, currentGroup, options, onMove,
 }: {
   r: TravelerRow;
   index: number;
   no?: number;
   tour: string;
+  /** Tour option title; the grade code is read off the booking. */
+  option?: string;
   guide?: string;
   time?: string;
   /** Shown once per reservation, and only to roles that may see money. */
@@ -801,6 +825,13 @@ function PaxCard({
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
       }}>
         {tour}
+        {option && (
+          <span style={{ color: C.muted }}>
+            {' · '}
+            <span style={{ fontFamily: MONO, fontSize: 10, color: C.accentInk }}>{r.booking.tg}</span>
+            {' '}{option}
+          </span>
+        )}
         {guide && <span style={{ color: C.muted }}> · {guide}</span>}
       </div>
 
