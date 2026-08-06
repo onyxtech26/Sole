@@ -204,18 +204,22 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
                 {g.tg} · {g.tgTitle}
               </span>
               <div style={{ flex: 1 }} />
-              {/* Entry time first: the group has to be at the gate before it
-                  departs, so it is the earlier of the two deadlines. */}
+              {/* Both times carry their own label. Unlabelled they read as one
+                  time printed twice — and on a group whose entry and departure
+                  happen to match, that is exactly what it looked like. Entry
+                  comes first because it is the earlier deadline. */}
               {g.ticketTime && (
-                <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.7)' }}>
-                  entry{' '}
-                  <span style={{ fontFamily: MONO, fontWeight: 600, color: '#fff' }}>
+                <>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,.65)' }}>entry</span>
+                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600 }}>
                     {g.ticketTime}
                   </span>
-                </span>
+                  <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.45)' }}>·</span>
+                </>
               )}
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,.65)' }}>tour</span>
               <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600 }}>{g.time}</span>
-              <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.7)' }}>·</span>
+              <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.45)' }}>·</span>
               <span style={{ fontSize: 11.5, fontWeight: 600 }}>{g.guide}</span>
               <span style={{ fontFamily: MONO, fontSize: 11, color: '#fdb44e' }}>{g.guidePhone}</span>
               <span style={{
