@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../ui/Icon';
 import {
   Btn, C, Empty, Hov, Input, MONO, Section, SectionHead, Select, Textarea, useToast,
@@ -56,13 +56,60 @@ export function MessagesView({ store, setConfirm }: ViewProps) {
 
   const previewBooking = upcoming.find(b => b.ref === previewRef) ?? upcoming[0] ?? null;
 
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const pendingCaret = useRef<number | null>(null);
+
   const body = working ? (working[lang] || working.en) : '';
-  const rendered = fillTemplate(body, templateVars(store.products, previewBooking));
+  const previewVars = templateVars(store.products, previewBooking);
+  const rendered = fillTemplate(body, previewVars);
+
+  /* The client's time-coordination message lost its date and time when the
+     placeholder chips appended to the end instead of the caret, and nothing
+     said so. A message that tells a traveller to turn up without saying when
+     is worth flagging. */
+  const missingWhen = body.trim().length > 0
+    && !/\{(date|travelDate)\}/.test(body)
+    && !/\{(time|tourTime)\}/.test(body);
 
   const edit = (patch: Partial<Template>) => {
     if (!working) return;
     setDraft({ ...working, ...patch });
   };
+
+  /**
+   * Drop a placeholder where the caret is.
+   *
+   * This used to append to the end of the message, which made the chips
+   * useless: every {date} and {time} landed after the sign-off and had to be
+   * cut and pasted back into the sentence. The chip suppresses mousedown so
+   * the textarea never loses its selection, splices at the caret (replacing
+   * any highlighted text), then restores focus with the caret sitting just
+   * after what was inserted, ready to keep typing.
+   */
+  const insertPlaceholder = (name: string) => {
+    if (!working) return;
+    const el = bodyRef.current;
+    const token = `{${name}}`;
+    const start = el?.selectionStart ?? body.length;
+    const end = el?.selectionEnd ?? body.length;
+    const next = body.slice(0, start) + token + body.slice(end);
+
+    // Park the caret target; the effect below applies it *after* React has
+    // committed the new value. Doing it in a rAF races the re-render, which
+    // puts the caret back at the end of the textarea.
+    pendingCaret.current = start + token.length;
+    edit({ [lang]: next } as Partial<Template>);
+  };
+
+  useEffect(() => {
+    const at = pendingCaret.current;
+    if (at == null) return;
+    pendingCaret.current = null;
+    const node = bodyRef.current;
+    if (!node) return;
+    node.focus();
+    node.setSelectionRange(at, at);
+  }, [body]);
 
   const save = () => {
     if (!draft) return;
@@ -241,8 +288,13 @@ export function MessagesView({ store, setConfirm }: ViewProps) {
                       key={p}
                       as="button"
                       type="button"
-                      title={`Insert {${p}}`}
-                      onClick={() => edit({ [lang]: `${body}{${p}}` } as Partial<Template>)}
+                      title={
+                        previewVars[p]
+                          ? `Insert {${p}} — renders as “${previewVars[p]}”`
+                          : `Insert {${p}}`
+                      }
+                      onMouseDown={(e: any) => e.preventDefault()}
+                      onClick={() => insertPlaceholder(p)}
                       style={{
                         fontFamily: MONO, fontSize: 10, border: `1px solid ${C.line}`,
                         background: C.wash, borderRadius: 4, padding: '1px 5px',
@@ -256,11 +308,27 @@ export function MessagesView({ store, setConfirm }: ViewProps) {
                 </div>
 
                 <Textarea
+                  ref={bodyRef}
                   value={body}
                   onChange={(e: any) => edit({ [lang]: e.target.value } as Partial<Template>)}
                   placeholder={`The ${LANGS.find(l => l.id === lang)?.label} version of this message`}
                   style={{ minHeight: 220, fontSize: 12.5, background: C.panel }}
                 />
+
+                {missingWhen && (
+                  <div style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 8,
+                    padding: '8px 11px', borderRadius: 6,
+                    background: C.warnBg, border: `1px solid #f3e2c4`,
+                  }}>
+                    <Icon name="info" size={13} color={C.warn} style={{ marginTop: 1 }} />
+                    <span style={{ fontSize: 11.5, color: C.warn, lineHeight: 1.5 }}>
+                      This message has no date or time. Put the caret where you want them
+                      and click <strong>{'{date}'}</strong> and <strong>{'{time}'}</strong> above —
+                      they fill in from each booking when the message is sent.
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </Section>

@@ -23,7 +23,7 @@ const WF_KEYS = [
 const blank = (): Booking => ({
   ref: `BR-${Date.now().toString().slice(-10)}`,
   code: '', tg: 'TG1', date: today(), resTime: '', tourTime: '', lang: 'EN',
-  guide: '', phone: '', travelers: [['', 'Adult']], gross: 0, spent: 0,
+  guide: '', phone: '', travelers: [['', 'Adult']], gross: 0, spent: 0, sortOrder: 0,
   wf: [0, 0, 0, 0], status: 'Confirmed', payment: 'Unpaid', refundPct: 0, notes: '',
   namesLocked: false, source: 'manual',
   tourName: '', tgTitle: '', meetingPoint: '', currency: 'EUR', leadTraveler: '',

@@ -50,6 +50,8 @@ export interface Booking {
   gross: number;           // revenue
   spent: number;           // direct cost
   refundPct: number;       // 0-100, only meaningful when payment is a partial refund
+  /** Hand-placed position in the Bookings table. 0 = never placed. */
+  sortOrder: number;
   wf: number[];            // [names, confirmed, time sent, review] as 0/1
   status: BookingStatus;
   payment: PaymentStatus;
@@ -210,7 +212,7 @@ export interface ImportBatch {
   rowsAdded: number;
   rowsUpdated: number;
   rowsUnchanged: number;
-  rowsCancelled: number; // Cancellata rows skipped
+  rowsCancelled: number; // rows that arrived as Cancellata and were applied
   rowsInvalid: number;   // no reference or no travel date
   source: string;
 }

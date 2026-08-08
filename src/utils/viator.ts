@@ -110,7 +110,14 @@ export function rowToBooking(row: Row): RowResult {
   if (!ref) return { booking: null, reason: 'invalid' };
 
   const status = translateStatus(row[COL.status]);
-  if (status === 'Cancelled') return { booking: null, reason: 'cancelled' };
+
+  /* A cancellation is the single most important thing an export can tell us,
+     and it used to be the one thing thrown away: this returned early on
+     'Cancellata', so the row never reached mergeForImport and a booking that
+     had already been imported sat at Confirmed for ever. The tour kept its
+     seat, its guide and its revenue line after the traveller had cancelled.
+     Cancelled rows are now imported like any other — the status simply rides
+     through, and every screen already treats Cancelled as excluded. */
 
   const date = cellToDate(row[COL.travelDate]);
   if (!date) return { booking: null, reason: 'invalid' };
@@ -140,6 +147,7 @@ export function rowToBooking(row: Row): RowResult {
       status,
       payment: 'Paid',                 // Viator collects up front; this is the payout
       refundPct: 0,
+      sortOrder: 0,
       notes: '',
       namesLocked: false,
       source: 'viator_import',
@@ -155,6 +163,9 @@ export function rowToBooking(row: Row): RowResult {
       namesComplete: false,
       serviceLineItems: null,
     },
+    // Still reported, so the import log can say how many arrived cancelled —
+    // it just no longer means "dropped".
+    reason: status === 'Cancelled' ? 'cancelled' : undefined,
   };
 }
 
@@ -247,9 +258,9 @@ export async function readViatorFile(file: File): Promise<ImportResult> {
 
   for (const r of rows) {
     const out = rowToBooking(r);
-    if (out.booking) incoming.push(out.booking);
-    else if (out.reason === 'cancelled') cancelled++;
-    else invalid++;
+    if (!out.booking) { invalid++; continue; }
+    incoming.push(out.booking);
+    if (out.reason === 'cancelled') cancelled++;
   }
 
   return { incoming, cancelled, invalid, total: rows.length };

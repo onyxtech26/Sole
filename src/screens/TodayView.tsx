@@ -160,7 +160,7 @@ export function TodayView({
       };
 
       commit({ bookings: merged, products, imports: [...store.imports, batch] });
-      toast(`${added} new · ${updated} updated · ${cancelled} cancelled rows skipped`);
+      toast(`${added} new · ${updated} updated · ${cancelled} cancelled`);
     } catch (e) {
       setError((e as Error)?.message || 'Could not read that file.');
     } finally {

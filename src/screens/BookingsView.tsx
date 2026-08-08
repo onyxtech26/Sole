@@ -38,7 +38,7 @@ const VIEWS = [
 
 type ViewId = (typeof VIEWS)[number]['id'];
 type SortCol =
-  | 'ref' | 'date' | 'resTime' | 'tourTime' | 'tour' | 'lead' | 'pax'
+  | 'manual' | 'ref' | 'date' | 'resTime' | 'tourTime' | 'tour' | 'tg' | 'lead' | 'pax'
   | 'guide' | 'status' | 'gross';
 
 /* Time-slot filter. 'all' is the default so the saved views keep behaving the
@@ -82,8 +82,14 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [timeAsk, setTimeAsk] = useState<string | null>(null);
+  /* Hand-placing rows only makes sense when the machine is not already
+     ordering them, so the handles appear in Manual mode alone. */
+  const [dragRef, setDragRef] = useState<string | null>(null);
+  const [overRef, setOverRef] = useState<string | null>(null);
 
   useEffect(() => { setPage(0); }, [view, query, fTour, fStatus, fGuide, fLang, period, anchor]);
+
+  const manualOrder = sortCol === 'manual';
 
   const periodRange = useMemo(
     () => (period === 'all' ? null : rangeFor(period, anchor, anchor)),
@@ -135,6 +141,17 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
         x.travelers.some(tv => tv[0].toLowerCase().includes(q)));
     }
 
+    if (sortCol === 'manual') {
+      // Unplaced rows (sortOrder 0) sit behind the placed ones, in date order,
+      // so a half-arranged list still reads sensibly.
+      return l.sort((a, b) => {
+        const oa = a.sortOrder || Number.MAX_SAFE_INTEGER;
+        const ob = b.sortOrder || Number.MAX_SAFE_INTEGER;
+        if (oa !== ob) return oa - ob;
+        return (a.date + a.ref).localeCompare(b.date + b.ref);
+      });
+    }
+
     const dir = sortDir === 'asc' ? 1 : -1;
     const key = (x: Booking): string | number => {
       switch (sortCol) {
@@ -142,6 +159,7 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
         case 'resTime': return x.resTime || '~';
         case 'tourTime': return x.tourTime || '~';
         case 'tour': return productName(store.products, x);
+        case 'tg': return x.tg;
         case 'lead': return x.travelers[0]?.[0] ?? '';
         case 'pax': return paxOf(x);
         case 'guide': return x.guide || '~';
@@ -185,6 +203,30 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
     });
   };
 
+  /**
+   * Drop `dragRef` in front of `targetRef` and renumber.
+   *
+   * The whole filtered list is renumbered 1..n, not just the visible page, so
+   * the order the operator sees is the order that persists — including rows
+   * further down the pagination. Bookings outside the current filter keep the
+   * positions they already had.
+   */
+  const reorder = (targetRef: string) => {
+    if (!dragRef || dragRef === targetRef) return;
+    const order = filtered.map(b => b.ref).filter(r => r !== dragRef);
+    const at = order.indexOf(targetRef);
+    if (at < 0) return;
+    order.splice(at, 0, dragRef);
+
+    const position = new Map(order.map((r, i) => [r, i + 1]));
+    commit({
+      bookings: store.bookings.map(b => {
+        const next = position.get(b.ref);
+        return next && next !== b.sortOrder ? { ...b, sortOrder: next } : b;
+      }),
+    });
+  };
+
   const toggleWf = (b: Booking, i: number) => {
     const wf = b.wf.slice();
     wf[i] = wf[i] ? 0 : 1;
@@ -222,11 +264,11 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
     await writeWorkbook(`sole-bookings-${t}.xlsx`, [{
       name: 'Bookings',
       head: [
-        'Reference', 'Date', 'Reserved', 'Tour time', 'Tour', 'Option', 'Lead passenger',
+        'Reference', 'Date', 'Reserved', 'Tour time', 'Tour', 'Grade', 'Option', 'Lead passenger',
         'Pax', 'Language', 'Guide', 'Status', 'Payment', 'Revenue', 'Phone', 'Notes',
       ],
       rows: filtered.map(b => [
-        b.ref, b.date, b.resTime, b.tourTime, productName(store.products, b),
+        b.ref, b.date, b.resTime, b.tourTime, productName(store.products, b), b.tg,
         tgTitleOf(store.products, b), b.travelers[0]?.[0] ?? '', paxOf(b), b.lang,
         b.guide, b.status, b.payment, b.gross, b.phone, b.notes,
       ]),
@@ -335,6 +377,34 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
           Filters
           {!!filterCount && <span style={{ fontFamily: MONO, fontSize: 10 }}>{filterCount}</span>}
         </Hov>
+
+        {/* Manual order is a sort like any other, so it lives with the sorting
+            rather than as a separate mode switch. Turning it on reveals the
+            drag handles; picking any column header turns it back off. Hidden
+            below the shell breakpoint, where rows are cards and there is no
+            table to drag within. */}
+        {!compact && (
+        <Hov
+          as="button"
+          type="button"
+          title={manualOrder
+            ? 'Sorted by hand — drag the rows to rearrange them'
+            : 'Arrange these bookings by hand'}
+          aria-pressed={manualOrder}
+          onClick={() => setSortCol(manualOrder ? 'date' : 'manual')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            border: `1px solid ${manualOrder ? C.accent : C.line}`,
+            background: manualOrder ? C.accentWash : C.panel, borderRadius: 6,
+            padding: '5px 10px', fontSize: 12, fontWeight: manualOrder ? 600 : 500,
+            color: manualOrder ? C.accentInk : C.body, cursor: 'pointer',
+          }}
+          hover={{ borderColor: '#c9ced7' }}
+        >
+          <Icon name="rows" size={13} />
+          Arrange
+        </Hov>
+        )}
 
         <Btn icon="download" small onClick={exportRows}>Export</Btn>
 
@@ -517,6 +587,7 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
             borderBottom: `1px solid ${C.line}`, background: C.wash, fontSize: 9.5,
             fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: C.muted2,
           }}>
+            {manualOrder && <span style={{ width: 14, flexShrink: 0 }} />}
             <CheckBox
               checked={allChecked}
               onClick={() => setSelected(allChecked ? [] : rows.map(r => r.ref))}
@@ -526,6 +597,7 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
             <SortHead w={52} onClick={() => sortBy('resTime')} on={sortCol === 'resTime'}>Res.{arrow('resTime')}</SortHead>
             <SortHead w={58} onClick={() => sortBy('tourTime')} on={sortCol === 'tourTime'}>Tour{arrow('tourTime')}</SortHead>
             <SortHead flex onClick={() => sortBy('tour')} on={sortCol === 'tour'}>Tour type{arrow('tour')}</SortHead>
+            <SortHead w={58} onClick={() => sortBy('tg')} on={sortCol === 'tg'}>Grade{arrow('tg')}</SortHead>
             <SortHead w={124} onClick={() => sortBy('lead')} on={sortCol === 'lead'}>Lead passenger{arrow('lead')}</SortHead>
             <SortHead w={38} center onClick={() => sortBy('pax')} on={sortCol === 'pax'}>Pax{arrow('pax')}</SortHead>
             <span style={{ width: 30, flexShrink: 0, textAlign: 'center' }}>Lng</span>
@@ -589,13 +661,48 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
                 tabIndex={0}
                 onClick={() => setOpenRef(r.ref)}
                 onKeyDown={(e: any) => { if (e.key === 'Enter') setOpenRef(r.ref); }}
+                draggable={manualOrder}
+                onDragStart={() => setDragRef(r.ref)}
+                onDragEnd={() => { setDragRef(null); setOverRef(null); }}
+                onDragOver={(e: any) => {
+                  if (!manualOrder || !dragRef) return;
+                  e.preventDefault();
+                  setOverRef(r.ref);
+                }}
+                onDragLeave={() => setOverRef(o => (o === r.ref ? null : o))}
+                onDrop={(e: any) => {
+                  if (!manualOrder) return;
+                  e.preventDefault();
+                  reorder(r.ref);
+                  setDragRef(null);
+                  setOverRef(null);
+                }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, minHeight: 42,
-                  padding: '0 13px', borderBottom: `1px solid ${C.lineFaint}`, cursor: 'pointer',
-                  background: checked ? C.accentWash : C.panel, animationDelay: delayOf(i),
+                  padding: '0 13px', cursor: 'pointer',
+                  borderBottom: `1px solid ${C.lineFaint}`,
+                  // A dragged row lands *above* the one it is dropped on, so
+                  // the indicator sits on the target's top edge. Drawn as an
+                  // inset shadow rather than a border so nothing shifts by a
+                  // pixel as it appears.
+                  boxShadow: overRef === r.ref && dragRef
+                    ? `inset 0 2px 0 0 ${C.accent}`
+                    : 'none',
+                  background: checked ? C.accentWash : C.panel,
+                  opacity: dragRef === r.ref ? 0.4 : 1,
+                  animationDelay: delayOf(i),
                 }}
                 hover={{ background: C.wash }}
               >
+                {manualOrder && (
+                  <span
+                    className="grab"
+                    title="Drag to reorder"
+                    style={{ width: 14, flexShrink: 0, color: C.faint2, fontSize: 12 }}
+                  >
+                    ⠿
+                  </span>
+                )}
                 <CheckBox
                   checked={checked}
                   onClick={(e: any) => {
@@ -632,8 +739,17 @@ export function BookingsView({ store, user, setConfirm, openRef, setOpenRef }: P
                     fontFamily: MONO, fontSize: 9.5, color: '#a9b0ba', whiteSpace: 'nowrap',
                     overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
-                    {r.tg} · {tgTitleOf(store.products, r)}
+                    {tgTitleOf(store.products, r)}
                   </span>
+                </span>
+                {/* The grade decides capacity and how a booking may be grouped,
+                    so it gets its own sortable column rather than living as a
+                    prefix on the option title. */}
+                <span style={{
+                  width: 58, flexShrink: 0, fontFamily: MONO, fontSize: 11,
+                  fontWeight: 600, color: C.accentInk,
+                }}>
+                  {r.tg}
                 </span>
                 <span style={{
                   width: 124, flexShrink: 0, display: 'flex', flexDirection: 'column', minWidth: 0,
