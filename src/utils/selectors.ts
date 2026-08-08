@@ -204,9 +204,23 @@ export interface ManifestBand {
   time: string;
   /** Venue entry / ticket time — when the group has to be at the gate. */
   ticketTime: string;
+  /** What the operator wrote for the guide. Empty when there is nothing to say. */
+  notes: string;
   guide: string; guidePhone: string;
   fill: string; pax: number; cap: number; rows: ManifestRow[];
 }
+
+/**
+ * Auto-group stamps every band it creates with "Auto-grouped · EN". That is
+ * the machine's own bookkeeping, not something a guide needs on a printed
+ * sheet, so it is dropped — but only when it is the *entire* note. The moment
+ * an operator adds anything of their own, the whole note prints.
+ */
+const AUTO_NOTE = /^Auto-grouped\s*·\s*\S+$/;
+const printableNote = (note: string): string => {
+  const n = (note || '').trim();
+  return AUTO_NOTE.test(n) ? '' : n;
+};
 
 /**
  * The day's runsheet — one band per group built on the Grouping screen.
@@ -269,6 +283,7 @@ export function manifestBands(store: StoreData, date: string, guideFilter?: stri
       tgTitle: tgTitleOf(store.products, { code: g.code, tg: g.tg, tgTitle: '' }),
       time: g.time,
       ticketTime: g.ticketTime,
+      notes: printableNote(g.notes),
       guide: g.guide,
       guidePhone: guidePhone(store.guides, store.staff, g.guide),
       fill: `${rows.length}/${cap} pax`,
@@ -315,8 +330,9 @@ export function manifestBands(store: StoreData, date: string, guideFilter?: stri
       tg,
       tgTitle: first ? tgTitleOf(store.products, first) : tg,
       time,
-      // These never went through Grouping, so nobody set an entry time.
+      // These never went through Grouping, so nobody set an entry time or a note.
       ticketTime: '',
+      notes: '',
       guide,
       guidePhone: guidePhone(store.guides, store.staff, guide),
       fill: `${rows.length}/${cap} pax`,

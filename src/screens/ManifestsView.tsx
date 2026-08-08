@@ -200,7 +200,7 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
                 GRP {g.no}
               </span>
               <span style={{ fontSize: 12.5, fontWeight: 600 }}>{g.tour}</span>
-              <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.7)' }}>
+              <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.85)' }}>
                 {g.tg} · {g.tgTitle}
               </span>
               <div style={{ flex: 1 }} />
@@ -210,25 +210,51 @@ export function ManifestsView({ store, user, onGo }: ViewProps) {
                   comes first because it is the earlier deadline. */}
               {g.ticketTime && (
                 <>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,.65)' }}>entry</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,.8)' }}>ticket time</span>
                   <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600 }}>
                     {g.ticketTime}
                   </span>
-                  <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.45)' }}>·</span>
+                  <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.55)' }}>·</span>
                 </>
               )}
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,.65)' }}>tour</span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,.8)' }}>tour</span>
               <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600 }}>{g.time}</span>
-              <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.45)' }}>·</span>
+              <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,.55)' }}>·</span>
               <span style={{ fontSize: 11.5, fontWeight: 600 }}>{g.guide}</span>
               <span style={{ fontFamily: MONO, fontSize: 11, color: '#fdb44e' }}>{g.guidePhone}</span>
               <span style={{
-                fontSize: 11, color: 'rgba(255,255,255,.7)',
-                background: 'rgba(255,255,255,.1)', borderRadius: 4, padding: '1px 6px',
+                fontSize: 11, fontWeight: 600, color: '#fff',
+                background: 'rgba(255,255,255,.18)', borderRadius: 4, padding: '1px 6px',
               }}>
                 {g.fill}
               </span>
             </div>
+
+            {/* What operations wrote for the guide. It sits directly under the
+                band header, above the passengers, because it is an instruction
+                about the whole group — "First Roman Forum then Colosseum" is
+                useless printed after the names. */}
+            {g.notes && (
+              <div style={{
+                display: 'flex', alignItems: 'flex-start', gap: 8,
+                padding: '8px 12px', background: C.warnBg,
+                borderLeft: `1px solid ${C.line}`, borderRight: `1px solid ${C.line}`,
+                borderBottom: `1px solid ${C.line}`,
+              }}>
+                <span style={{
+                  fontSize: 9, fontWeight: 700, letterSpacing: '.07em',
+                  textTransform: 'uppercase', color: C.warn, flexShrink: 0, marginTop: 1,
+                }}>
+                  Note
+                </span>
+                <span style={{
+                  fontSize: 11.5, color: '#6b4a10', lineHeight: 1.5,
+                  fontWeight: 500, textWrap: 'pretty',
+                }}>
+                  {g.notes}
+                </span>
+              </div>
+            )}
 
             <div data-r="scroll" style={{
               overflowX: 'auto', border: `1px solid ${C.line}`, borderTop: 0,

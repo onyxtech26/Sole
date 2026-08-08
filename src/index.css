@@ -416,6 +416,20 @@ select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
   [data-r='doc'] { border: 0 !important; padding: 0 !important; border-radius: 0 !important; }
   [data-r='scroll'] { overflow: visible !important; }
 
+  /* Browsers drop background colours when printing unless asked not to, which
+     turned the navy band headers into white bars carrying white text and left
+     the sheet a wash of pale grey — unreadable on a phone. Print the colours
+     the document was designed with. */
+  [data-r='doc'], [data-r='doc'] * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ink is cheap next to a guide misreading a runsheet: lift the body copy off
+     grey and onto near-black for the printed copy only. */
+  [data-r='doc'] td { color: #1a2230 !important; }
+  [data-r='doc'] th { color: #3f4756 !important; }
+
   /* A runsheet is read across a whole page: never split a band's header from
      its passengers, or a passenger row across two sheets. */
   [data-r='doc'] table { break-inside: auto; }

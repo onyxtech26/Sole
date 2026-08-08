@@ -36,7 +36,7 @@ export const toCsv = (rows: unknown[][]): string =>
 
 /* ── manifests ──────────────────────────────────────────────────────────── */
 const MANIFEST_HEAD = [
-  'Group', 'Tour', 'Option', 'Tour time', 'Entry time', 'Guide', 'Guide phone',
+  'Group', 'Tour', 'Option', 'Tour time', 'Ticket time', 'Note', 'Guide', 'Guide phone',
   'No', 'Reference', 'Name', 'Age', 'Role', 'Phone', 'Language',
 ];
 
@@ -45,7 +45,7 @@ export function manifestCsv(bands: ManifestBand[]): string {
   for (const g of bands) {
     for (const r of g.rows) {
       lines.push([
-        g.no, g.tour, `${g.tg} ${g.tgTitle}`, g.time, g.ticketTime, g.guide, g.guidePhone,
+        g.no, g.tour, `${g.tg} ${g.tgTitle}`, g.time, g.ticketTime, g.notes, g.guide, g.guidePhone,
         r.no, r.ref, r.name, r.age, r.role, r.phone, r.lang,
       ]);
     }
@@ -61,8 +61,9 @@ export function manifestText(bands: ManifestBand[], date: string): string {
     bands
       .map(g =>
         `GRP ${g.no} · ${g.tour} (${g.tg}) · tour ${g.time}`
-        + `${g.ticketTime ? ` · entry ${g.ticketTime}` : ''}`
-        + ` · ${g.guide} ${g.guidePhone} · ${g.fill}\n` +
+        + `${g.ticketTime ? ` · ticket time ${g.ticketTime}` : ''}`
+        + ` · ${g.guide} ${g.guidePhone} · ${g.fill}\n`
+        + `${g.notes ? `  Note: ${g.notes}\n` : ''}` +
         g.rows
           .map(r => `  ${r.no}. ${r.name} (${r.age})${r.phone ? ` · ${r.phone}` : ''}`)
           .join('\n'),
@@ -108,34 +109,78 @@ export async function manifestPdf(bands: ManifestBand[], date: string): Promise<
     return doc.output('blob');
   }
 
+  const W_CONTENT = W - 80;
+
   for (const g of bands) {
-    doc.setTextColor(...BRAND);
+    /* A solid navy band, matching the screen. The previous version set the
+       group line in grey on white, which survives a laptop screen and washes
+       out completely on a phone — which is where the guides actually read it. */
+    doc.setFillColor(...BRAND);
+    doc.rect(40, y - 12, W_CONTENT, 34, 'F');
+
+    doc.setTextColor(...ACCENT);
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(`GRP ${g.no}`, 48, y);
+
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
-    doc.text(`Group ${g.no} · ${g.tour} (${g.tg})`, 40, y);
+    doc.text(`${g.tour}`, 90, y);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(120, 128, 140);
+    doc.setTextColor(214, 220, 230);
+    doc.text(`${g.tg} · ${g.tgTitle}`, 48, y + 13);
+
+    // Times and guide on the right, where the eye lands last.
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    const when = `${g.ticketTime ? `ticket time ${g.ticketTime}   ` : ''}tour ${g.time}`;
+    doc.text(when, W - 48, y, { align: 'right' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(253, 180, 78);
     doc.text(
-      `tour ${g.time}${g.ticketTime ? ` · entry ${g.ticketTime}` : ''} · ${g.tgTitle}`
-      + ` · ${g.guide}${g.guidePhone ? ` ${g.guidePhone}` : ''} · ${g.fill}`,
-      40, y + 13,
+      `${g.guide}${g.guidePhone ? `  ${g.guidePhone}` : ''}   ${g.fill}`,
+      W - 48, y + 13, { align: 'right' },
     );
 
+    let tableTop = y + 30;
+
+    /* The operator's note for this group, in a warm band the eye cannot skip. */
+    if (g.notes) {
+      const lines = doc.splitTextToSize(`Note: ${g.notes}`, W_CONTENT - 16) as string[];
+      const noteH = 8 + lines.length * 11;
+      doc.setFillColor(253, 243, 227);
+      doc.rect(40, tableTop, W_CONTENT, noteH, 'F');
+      doc.setDrawColor(240, 219, 179);
+      doc.rect(40, tableTop, W_CONTENT, noteH, 'S');
+      doc.setTextColor(122, 71, 6);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(lines, 48, tableTop + 13);
+      tableTop += noteH;
+    }
+
     autoTable(doc, {
-      startY: y + 22,
+      startY: tableTop,
       head: [['#', 'Name', 'Age', 'Role', 'Reference', 'Phone', 'Lang']],
       body: g.rows.map(r => [r.no, r.name, r.age, r.role, r.ref, r.phone, r.lang]),
       theme: 'grid',
-      styles: { fontSize: 8.5, cellPadding: 4, lineColor: [229, 232, 237], textColor: [40, 48, 62] },
-      headStyles: { fillColor: [246, 247, 249], textColor: [90, 98, 112], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [250, 251, 252] },
-      columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 40 }, 3: { cellWidth: 48 }, 6: { cellWidth: 36 } },
+      // Near-black body text and a navy header row: on a phone the old grey
+      // -on-pale-grey combination was the hardest thing on the page to read.
+      styles: { fontSize: 9, cellPadding: 5, lineColor: [206, 213, 223], textColor: [20, 27, 40] },
+      headStyles: { fillColor: [31, 41, 61], textColor: [255, 255, 255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [240, 244, 249] },
+      columnStyles: {
+        0: { cellWidth: 26 }, 2: { cellWidth: 40 }, 3: { cellWidth: 48 },
+        4: { fontStyle: 'bold' }, 6: { cellWidth: 36 },
+      },
       margin: { left: 40, right: 40 },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 26;
+    y = (doc as any).lastAutoTable.finalY + 32;
     if (y > doc.internal.pageSize.getHeight() - 90) {
       doc.addPage();
       y = 56;
